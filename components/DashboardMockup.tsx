@@ -5,13 +5,13 @@ export const DashboardMockup: React.FC = () => {
   return (
     // The container establishes the 3D space
     <div className="relative w-full max-w-[600px] aspect-[4/3] group perspective-[2000px]">
-      
+
       {/* Background Decorative Blob behind the mockup */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-to-tr from-blue-200/40 via-purple-200/40 to-pink-200/40 blur-[60px] rounded-full pointer-events-none"></div>
 
       {/* Main Dashboard Card - Rotated in 3D */}
       <div className="absolute inset-0 bg-white rounded-2xl shadow-2xl shadow-blue-900/20 border border-slate-200/60 overflow-hidden transform transition-transform duration-700 ease-out lg:rotate-y-[-12deg] lg:rotate-x-[5deg] group-hover:rotate-y-[-8deg] group-hover:rotate-x-[2deg]">
-        
+
         {/* Fake Browser Header */}
         <div className="h-10 bg-slate-50 border-b border-slate-100 flex items-center px-4 gap-2">
           <div className="flex gap-1.5">
@@ -20,7 +20,7 @@ export const DashboardMockup: React.FC = () => {
             <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
           </div>
           <div className="ml-4 flex-1 max-w-[200px] h-6 bg-white rounded-md border border-slate-200 flex items-center px-2 text-[10px] text-slate-400">
-            jobhub.id/dashboard
+            jobsagent.id/dashboard
           </div>
         </div>
 
@@ -28,16 +28,16 @@ export const DashboardMockup: React.FC = () => {
         <div className="flex h-full">
           {/* Sidebar */}
           <div className="w-16 sm:w-48 bg-slate-50 border-r border-slate-100 flex flex-col py-4 gap-1">
-             <div className="px-4 mb-4 font-bold text-brand-600 flex items-center gap-2">
-                <div className="w-6 h-6 bg-brand-600 rounded flex items-center justify-center text-white text-xs">J</div>
-                <span className="hidden sm:inline">JobHub</span>
-             </div>
-             {['Dashboard', 'Pekerjaan', 'Aplikasi', 'Interview'].map((item, idx) => (
-               <div key={item} className={`mx-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-3 cursor-pointer ${idx === 1 ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}>
-                  <div className={`w-2 h-2 rounded-full ${idx === 1 ? 'bg-brand-600' : 'bg-transparent'}`}></div>
-                  <span className="hidden sm:inline">{item}</span>
-               </div>
-             ))}
+            <div className="px-4 mb-4 font-bold text-brand-600 flex items-center gap-2">
+              <div className="w-6 h-6 bg-brand-600 rounded flex items-center justify-center text-white text-xs">J</div>
+              <span className="hidden sm:inline">Jobs Agent</span>
+            </div>
+            {['Dashboard', 'Pekerjaan', 'Aplikasi', 'Interview'].map((item, idx) => (
+              <div key={item} className={`mx-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-3 cursor-pointer ${idx === 1 ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}>
+                <div className={`w-2 h-2 rounded-full ${idx === 1 ? 'bg-brand-600' : 'bg-transparent'}`}></div>
+                <span className="hidden sm:inline">{item}</span>
+              </div>
+            ))}
           </div>
 
           {/* Main Content Area */}
@@ -81,7 +81,7 @@ export const DashboardMockup: React.FC = () => {
                 </div>
               ))}
             </div>
-            
+
             {/* Visual Filler for 'More' */}
             <div className="mt-4 flex justify-center">
               <div className="h-1 w-20 bg-slate-100 rounded-full"></div>

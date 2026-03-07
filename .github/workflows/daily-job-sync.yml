@@ -1,0 +1,27 @@
+name: Daily Job Sync
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Menjalankan setiap jam 12 malam (UTC)
+  workflow_dispatch: # Memungkinkan menjalankan secara manual dari GitHub UI
+
+jobs:
+  scrape-jobs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Bulk Scraper
+        env:
+          VITE_APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          # Jika script butuh env lain, tambahkan di sini
+        run: node scripts/bulk-scrape.mjs --token ${{ secrets.APIFY_TOKEN }} --rows 20

@@ -15,6 +15,15 @@ interface ScrapedJob {
     tags?: string[];
 }
 
+export interface InstagramPost {
+    id: string;
+    caption: string;
+    url: string;
+    imageUrl: string;
+    author: string;
+    timestamp: string;
+}
+
 // Daftar domain yang sudah punya Actor matang di Apify
 const APIFY_SUPPORTED_DOMAINS = [
     'linkedin.com',
@@ -32,7 +41,7 @@ export const scraperService = {
 
         // 1. Prioritas Utama: ZENROWS (jika key tersedia)
         // ZenRows lebih kuat untuk bypass anti-bot LinkedIn
-        const ZENROWS_API_KEY = (import.meta as any).env.VITE_ZENROWS_API_KEY;
+        const ZENROWS_API_KEY = import.meta.env.VITE_ZENROWS_API_KEY;
 
         if (domain.includes('linkedin.com') && ZENROWS_API_KEY) {
             console.log("[Scraper] Mencoba ZenRows sebagai prioritas...");
@@ -86,33 +95,34 @@ export const scraperService = {
     },
 
     /**
-     * 1. SCRAPE MENGGUNAKAN APIFY (MARKETPLACE ACTORS)
-     * Cocok untuk situs besar yang sudah ada "Actor"-nya.
+     * 1. SCRAPE MENGGUNAKAN APIFY (curious_coder/LinkedIn-Jobs-Scraper)
+     * Pay-per-result: $1.00 / 1,000 results. Rating 4.9 (50 reviews).
+     * Input: LinkedIn search URLs langsung.
      */
     async scrapeWithApify(url: string): Promise<ScrapedJob[]> {
-        const APIFY_TOKEN = (import.meta as any).env.VITE_APIFY_TOKEN;
+        const APIFY_TOKEN = import.meta.env.VITE_APIFY_TOKEN;
         const urlObj = new URL(url);
-        const query = urlObj.searchParams.get('keywords') || 'HSE';
+        const query = urlObj.searchParams.get('keywords') || 'Job';
+        const location = urlObj.searchParams.get('location') || 'Indonesia';
 
-        console.log(`[Apify] Menjalankan Actor Marketplace untuk: ${query}`);
+        console.log(`[Apify] Menjalankan curious_coder/LinkedIn-Jobs-Scraper untuk: "${query}" di "${location}"`);
         if (!APIFY_TOKEN) {
             throw new Error('Apify Token is missing in .env.local');
         }
 
         try {
-            // Menggunakan Actor Resmi LinkedIn Jobs Scraper yang lebih stabil
-            console.log(`[Apify] Menjalankan Official Scraper untuk: "${query}"...`);
+            // Bangun URL pencarian LinkedIn yang benar
+            const searchUrl = `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(query)}&location=${encodeURIComponent(location)}&position=1&pageNum=0`;
 
-            const response = await fetch(`https://api.apify.com/v2/acts/apify~linkedin-jobs-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}`, {
+            const response = await fetch(`https://api.apify.com/v2/acts/curious_coder~linkedin-jobs-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    queries: [query], // LinkedIn Official Scraper butuh array
-                    location: "Indonesia",
-                    count: 5,         // Official Scraper pakai 'count' atau 'maxItems'
-                    maxItems: 5
+                    urls: [searchUrl],
+                    rows: 25,
+                    scrapeCompanyDetails: false
                 })
             });
 
@@ -122,24 +132,38 @@ export const scraperService = {
             }
 
             const items = await response.json();
+
+            if (!Array.isArray(items)) {
+                console.warn("[Apify] API tidak mengembalikan array. Respons:", items);
+                if (items.error) throw new Error(`Apify Error: ${items.error.message || JSON.stringify(items.error)}`);
+                throw new Error('Respons Apify bukan merupakan daftar lowongan.');
+            }
+
             console.log(`[Apify] Data berhasil diterima: ${items.length} items`);
+            if (items.length === 0) return [];
 
-            if (!items || items.length === 0) throw new Error('No items found');
-
-            return items.map((item: any) => ({
-                title: item.positionName || item.title || query,
-                company: item.companyName || item.company || "Perusahaan Terkait",
-                location: item.location || "Indonesia",
+            const jobs = items.map((item: any) => ({
+                title: item.title || query,
+                company: item.companyName || "Perusahaan Terkait",
+                location: item.location || location,
                 salary: item.salary || "Negosiasi",
-                description: item.description || item.jobDescription || "Klik detail untuk melihat deskripsi lengkap.",
-                source: "LinkedIn (Apify)",
+                description: (item.descriptionText || item.descriptionHtml || "Klik detail untuk melihat deskripsi lengkap.").substring(0, 2000),
+                source: "LinkedIn",
                 timeAgo: item.postedAt || "Baru saja",
                 logo: (item.companyName || "P")[0].toUpperCase(),
-                tags: item.jobType ? [item.jobType] : ["Full-time"]
+                tags: item.employmentType ? [item.employmentType] : (item.contractType ? [item.contractType] : ["Full-time"]),
+                url: item.link || item.applyUrl || "",
+                logoUrl: item.companyLogo || "",
+                applyUrl: item.applyUrl || item.link || ""
             }));
+
+            // Sync to Supabase in background
+            this.syncJobsToSupabase(jobs).catch(err => console.error("[Sync] Gagal menyimpan ke DB:", err));
+
+            return jobs;
         } catch (error: any) {
             console.warn("[Apify] Failed:", error.message);
-            throw error; // Lempar error agar bisa ditangkap oleh caller
+            throw error;
         }
     },
 
@@ -148,7 +172,7 @@ export const scraperService = {
      * Cocok untuk situs lokal atau yang tidak ada di Apify.
      */
     async scrapeWithZenRows(url: string): Promise<ScrapedJob[]> {
-        const ZENROWS_API_KEY = (import.meta as any).env.VITE_ZENROWS_API_KEY;
+        const ZENROWS_API_KEY = import.meta.env.VITE_ZENROWS_API_KEY;
         console.log(`[ZenRows] Bypass anti-bot & mengambil HTML (Autoparse) untuk: ${url}`);
 
         if (!ZENROWS_API_KEY) {
@@ -193,5 +217,77 @@ export const scraperService = {
                 tags: ["Full-time"]
             };
         });
+    },
+
+    /**
+     * 3. SCRAPE INSTAGRAM POSTS VIA APIFY
+     */
+    async scrapeInstagramPosts(usernames: string[]): Promise<InstagramPost[]> {
+        const APIFY_TOKEN = import.meta.env.VITE_APIFY_TOKEN;
+
+        if (!APIFY_TOKEN) {
+            throw new Error('Apify Token is missing. Please set VITE_APIFY_TOKEN.');
+        }
+
+        console.log(`[Apify] Menjalankan Instagram Scraper untuk: ${usernames.join(', ')}`);
+
+        try {
+            const response = await fetch(`https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    search: usernames.join(', '),
+                    searchType: "hashtag",
+                    resultsType: "posts",
+                    resultsLimit: 10
+                })
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.text();
+                throw new Error(`Apify IG API Error: ${response.status} - ${errorBody}`);
+            }
+
+            const items = await response.json();
+            console.log(`[Apify] IG Data berhasil diterima: ${items.length} items`);
+
+            return items.map((item: any) => ({
+                id: item.id || Math.random().toString(),
+                caption: item.caption || "",
+                url: item.url || "",
+                imageUrl: item.displayUrl || item.imageUrl || "",
+                author: item.ownerUsername || item.ownerFullName || "Instagram User",
+                timestamp: item.timestamp || new Date().toISOString()
+            }));
+        } catch (error: any) {
+            console.warn("[Apify] IG Scraping Failed:", error.message);
+            throw error;
+        }
+    },
+
+    /**
+     * SYNC JOBS TO SUPABASE
+     */
+    async syncJobsToSupabase(jobs: any[]) {
+        const { supabase } = await import('./supabase');
+        const jobsToInsert = jobs.map(job => ({
+            title: job.title,
+            company: job.company,
+            location: job.location,
+            salary: job.salary,
+            description: job.description,
+            url: job.url || `https://linkedin.com/search?keywords=${encodeURIComponent(job.title)}`,
+            apply_url: job.applyUrl || job.url || '',
+            logo_url: job.logoUrl || '',
+            source: job.source || 'LinkedIn',
+            job_type: job.tags ? job.tags[0] : 'Full-time',
+            posted_at: job.timeAgo && job.timeAgo.match(/^\d{4}-\d{2}-\d{2}/) ? job.timeAgo : new Date().toISOString()
+        }));
+
+        const { error } = await supabase.from('jobs').upsert(jobsToInsert, { onConflict: 'url' });
+        if (error) console.error("[Supabase Sync Error]", error);
+        else console.log(`[Supabase Sync] Sync success: ${jobsToInsert.length} jobs.`);
     }
 };

@@ -11,7 +11,7 @@ export const Features: React.FC = () => {
   return (
     <section className="py-24 lg:py-32 bg-slate-50 relative" id="fitur-unggulan">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Header */}
         <div className="text-center mb-16 lg:mb-20">
           <h2 className="text-4xl lg:text-[56px] font-bold text-slate-900 mb-6 tracking-tight leading-tight">
@@ -24,7 +24,7 @@ export const Features: React.FC = () => {
 
         {/* Bento Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          
+
           {/* CARD 1: AI Job Matching (Left, Tall) */}
           <div className="lg:col-span-5 bg-gradient-to-b from-white to-blue-50/50 rounded-[32px] border border-slate-200 p-8 lg:p-12 relative overflow-hidden group hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-1 flex flex-col">
             <div className="mb-8">
@@ -36,7 +36,7 @@ export const Features: React.FC = () => {
                 AI menganalisis CV kamu dan memberikan match score 0-100% untuk setiap job. Lihat exactly kenapa kamu cocok atau tidak.
               </p>
             </div>
-            
+
             <div className="mt-auto relative h-64 w-full flex items-center justify-center">
               {/* Main Score Badge */}
               <div className="relative z-10 flex flex-col items-center">
@@ -71,7 +71,7 @@ export const Features: React.FC = () => {
                   </div>
                 </div>
               </div>
-              
+
               {/* Decorative Elements */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-200/30 rounded-full blur-3xl"></div>
               <div className="absolute bottom-0 left-0 w-32 h-32 bg-green-200/30 rounded-full blur-3xl"></div>
@@ -80,7 +80,7 @@ export const Features: React.FC = () => {
 
           {/* Right Column Container */}
           <div className="lg:col-span-7 flex flex-col gap-6">
-            
+
             {/* CARD 2: Multi-Platform Search (Wide) */}
             <div className="bg-white rounded-[32px] border border-slate-200 p-8 lg:p-10 relative overflow-hidden group hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-1 h-full min-h-[300px]">
               <div className="flex flex-col lg:flex-row gap-8 items-start">
@@ -93,7 +93,7 @@ export const Features: React.FC = () => {
                     Hemat 2 jam per hari. Satu search, semua hasil.
                   </p>
                 </div>
-                
+
                 {/* Visual */}
                 <div className="flex-1 w-full relative">
                   <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 shadow-sm relative z-10">
@@ -120,101 +120,101 @@ export const Features: React.FC = () => {
 
             {/* Bottom Row of Right Column */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
-               
-               {/* CARD 3: Notion Integration */}
-               <div className="bg-white rounded-[32px] border border-slate-200 p-8 relative overflow-hidden group hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-1 min-h-[300px] flex flex-col">
-                 <div className="mb-6 z-10">
-                    <div className="mb-6 opacity-90 group-hover:scale-110 transition-transform duration-300 origin-left">
-                      <NotionLogo />
-                    </div>
-                    <h3 className="text-2xl font-bold text-slate-900 mb-2">Save ke Notion</h3>
-                    <p className="text-slate-600 text-[15px]">
-                      One-click save. Auto-create database.
-                    </p>
-                 </div>
-                 
-                 {/* Visual Kanban */}
-                 <div className="mt-auto bg-slate-50 rounded-t-xl border-t border-x border-slate-200 p-3 pb-0 relative -bottom-8 group-hover:-bottom-4 transition-all duration-300">
-                    <div className="flex gap-2 overflow-hidden">
-                      {[1, 2, 3].map((col) => (
-                        <div key={col} className="w-16 bg-white rounded-t border border-slate-200 p-1.5 space-y-1.5 flex-shrink-0">
-                          <div className={`h-1.5 w-8 rounded-full ${col===1 ? 'bg-red-200' : col===2 ? 'bg-yellow-200' : 'bg-green-200'}`}></div>
-                          <div className="h-6 w-full bg-slate-50 border border-slate-100 rounded"></div>
-                          <div className="h-6 w-full bg-slate-50 border border-slate-100 rounded"></div>
-                        </div>
-                      ))}
-                    </div>
-                 </div>
-               </div>
 
-               {/* CARD 4: ATS Scanner */}
-               <div className="bg-white rounded-[32px] border border-slate-200 p-8 relative overflow-hidden group hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-1 min-h-[300px] flex flex-col">
-                 <div className="mb-6 z-10">
-                    <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center text-orange-600 mb-6 shadow-sm">
-                      <ScanLine size={20} strokeWidth={2.5} />
-                    </div>
-                    <h3 className="text-2xl font-bold text-slate-900 mb-2">ATS CV Scanner</h3>
-                    <p className="text-slate-600 text-[15px]">
-                      Cek ATS score sebelum apply lowongan.
-                    </p>
-                 </div>
-                 
-                 {/* Visual Score */}
-                 <div className="mt-auto flex justify-center pb-2">
-                    <div className="relative w-24 h-24 flex items-center justify-center">
-                      <svg className="w-full h-full transform -rotate-90">
-                        <circle cx="48" cy="48" r="40" stroke="#f1f5f9" strokeWidth="8" fill="transparent" />
-                        <circle cx="48" cy="48" r="40" stroke="#f97316" strokeWidth="8" fill="transparent" strokeDasharray="251.2" strokeDashoffset="70" className="transition-all duration-1000 ease-out group-hover:stroke-dashoffset-50" />
-                      </svg>
-                      <div className="absolute text-xl font-bold text-slate-800">72</div>
-                    </div>
-                 </div>
-               </div>
+              {/* CARD 3: Notion Integration */}
+              <div className="bg-white rounded-[32px] border border-slate-200 p-8 relative overflow-hidden group hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-1 min-h-[300px] flex flex-col">
+                <div className="mb-6 z-10">
+                  <div className="mb-6 opacity-90 group-hover:scale-110 transition-transform duration-300 origin-left">
+                    <NotionLogo />
+                  </div>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-2">Save ke Notion</h3>
+                  <p className="text-slate-600 text-[15px]">
+                    One-click save. Auto-create database.
+                  </p>
+                </div>
+
+                {/* Visual Kanban */}
+                <div className="mt-auto bg-slate-50 rounded-t-xl border-t border-x border-slate-200 p-3 pb-0 relative -bottom-8 group-hover:-bottom-4 transition-all duration-300">
+                  <div className="flex gap-2 overflow-hidden">
+                    {[1, 2, 3].map((col) => (
+                      <div key={col} className="w-16 bg-white rounded-t border border-slate-200 p-1.5 space-y-1.5 flex-shrink-0">
+                        <div className={`h-1.5 w-8 rounded-full ${col === 1 ? 'bg-red-200' : col === 2 ? 'bg-yellow-200' : 'bg-green-200'}`}></div>
+                        <div className="h-6 w-full bg-slate-50 border border-slate-100 rounded"></div>
+                        <div className="h-6 w-full bg-slate-50 border border-slate-100 rounded"></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* CARD 4: ATS Scanner */}
+              <div className="bg-white rounded-[32px] border border-slate-200 p-8 relative overflow-hidden group hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-1 min-h-[300px] flex flex-col">
+                <div className="mb-6 z-10">
+                  <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center text-orange-600 mb-6 shadow-sm">
+                    <ScanLine size={20} strokeWidth={2.5} />
+                  </div>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-2">ATS CV Scanner</h3>
+                  <p className="text-slate-600 text-[15px]">
+                    Cek ATS score sebelum apply lowongan.
+                  </p>
+                </div>
+
+                {/* Visual Score */}
+                <div className="mt-auto flex justify-center pb-2">
+                  <div className="relative w-24 h-24 flex items-center justify-center">
+                    <svg className="w-full h-full transform -rotate-90">
+                      <circle cx="48" cy="48" r="40" stroke="#f1f5f9" strokeWidth="8" fill="transparent" />
+                      <circle cx="48" cy="48" r="40" stroke="#f97316" strokeWidth="8" fill="transparent" strokeDasharray="251.2" strokeDashoffset="70" className="transition-all duration-1000 ease-out group-hover:stroke-dashoffset-50" />
+                    </svg>
+                    <div className="absolute text-xl font-bold text-slate-800">72</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* CARD 5: AI Cover Letter (Full Width) */}
           <div className="lg:col-span-12 bg-gradient-to-r from-purple-50 to-pink-50 rounded-[32px] border border-slate-200 p-8 lg:p-12 relative overflow-hidden group hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-1 flex flex-col lg:flex-row items-center gap-10">
-             <div className="lg:w-1/2 z-10">
-               <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-purple-600 mb-6 shadow-sm">
-                 <Bot size={32} strokeWidth={2} />
-               </div>
-               <h3 className="text-3xl font-bold text-slate-900 mb-4">AI Cover Letter Generator</h3>
-               <p className="text-lg text-slate-600 leading-relaxed max-w-lg mb-8">
-                 Ga perlu bingung nulis kata-kata. AI jobhub membuat cover letter profesional dalam 60 detik, yang disesuaikan secara spesifik dengan job description dan pengalamanmu.
-               </p>
-               <button className="flex items-center gap-2 font-semibold text-purple-700 bg-white px-6 py-3 rounded-xl border border-purple-100 shadow-sm hover:bg-purple-50 transition-colors">
-                 Coba Generator <ArrowRight size={18} />
-               </button>
-             </div>
-             
-             {/* Visual Document */}
-             <div className="lg:w-1/2 w-full flex justify-center lg:justify-end relative perspective-[1000px]">
-                <div className="relative w-64 h-80 bg-white rounded-xl border border-slate-200 shadow-xl p-6 transform rotate-y-[-10deg] rotate-x-[5deg] group-hover:rotate-y-0 group-hover:rotate-x-0 transition-transform duration-500">
-                  <div className="h-3 w-1/3 bg-slate-800 rounded mb-6"></div>
-                  <div className="space-y-3">
-                    <div className="h-2 w-full bg-slate-200 rounded"></div>
-                    <div className="h-2 w-full bg-slate-200 rounded"></div>
-                    <div className="h-2 w-2/3 bg-slate-200 rounded"></div>
-                    <br />
-                    <div className="h-2 w-full bg-slate-200 rounded"></div>
-                    <div className="h-2 w-full bg-slate-200 rounded"></div>
-                    <div className="h-2 w-full bg-slate-200 rounded"></div>
-                    <div className="h-2 w-1/2 bg-slate-200 rounded"></div>
-                  </div>
-                  
-                  {/* Floating Sparkles */}
-                  <div className="absolute -top-4 -right-4 bg-yellow-100 p-2 rounded-lg shadow-sm border border-yellow-200 animate-bounce">
-                    <Bot size={20} className="text-yellow-600" />
-                  </div>
-                  <div className="absolute -bottom-2 -left-2 bg-purple-100 p-2 rounded-full shadow-sm border border-purple-200">
-                     <div className="text-[10px] font-bold text-purple-600">AI Generated</div>
-                  </div>
+            <div className="lg:w-1/2 z-10">
+              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-purple-600 mb-6 shadow-sm">
+                <Bot size={32} strokeWidth={2} />
+              </div>
+              <h3 className="text-3xl font-bold text-slate-900 mb-4">AI Cover Letter Generator</h3>
+              <p className="text-lg text-slate-600 leading-relaxed max-w-lg mb-8">
+                Ga perlu bingung nulis kata-kata. AI Jobs Agent membuat cover letter profesional dalam 60 detik, yang disesuaikan secara spesifik dengan job description dan pengalamanmu.
+              </p>
+              <button className="flex items-center gap-2 font-semibold text-purple-700 bg-white px-6 py-3 rounded-xl border border-purple-100 shadow-sm hover:bg-purple-50 transition-colors">
+                Coba Generator <ArrowRight size={18} />
+              </button>
+            </div>
+
+            {/* Visual Document */}
+            <div className="lg:w-1/2 w-full flex justify-center lg:justify-end relative perspective-[1000px]">
+              <div className="relative w-64 h-80 bg-white rounded-xl border border-slate-200 shadow-xl p-6 transform rotate-y-[-10deg] rotate-x-[5deg] group-hover:rotate-y-0 group-hover:rotate-x-0 transition-transform duration-500">
+                <div className="h-3 w-1/3 bg-slate-800 rounded mb-6"></div>
+                <div className="space-y-3">
+                  <div className="h-2 w-full bg-slate-200 rounded"></div>
+                  <div className="h-2 w-full bg-slate-200 rounded"></div>
+                  <div className="h-2 w-2/3 bg-slate-200 rounded"></div>
+                  <br />
+                  <div className="h-2 w-full bg-slate-200 rounded"></div>
+                  <div className="h-2 w-full bg-slate-200 rounded"></div>
+                  <div className="h-2 w-full bg-slate-200 rounded"></div>
+                  <div className="h-2 w-1/2 bg-slate-200 rounded"></div>
                 </div>
-                
-                {/* Background Glow */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-purple-200/40 rounded-full blur-[60px] pointer-events-none"></div>
-             </div>
+
+                {/* Floating Sparkles */}
+                <div className="absolute -top-4 -right-4 bg-yellow-100 p-2 rounded-lg shadow-sm border border-yellow-200 animate-bounce">
+                  <Bot size={20} className="text-yellow-600" />
+                </div>
+                <div className="absolute -bottom-2 -left-2 bg-purple-100 p-2 rounded-full shadow-sm border border-purple-200">
+                  <div className="text-[10px] font-bold text-purple-600">AI Generated</div>
+                </div>
+              </div>
+
+              {/* Background Glow */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-purple-200/40 rounded-full blur-[60px] pointer-events-none"></div>
+            </div>
           </div>
 
         </div>

@@ -71,6 +71,7 @@ const App: React.FC = () => {
     const userMetadata = {
       full_name: session.user?.user_metadata?.full_name,
       email: session.user?.email,
+      job_preferences: session.user?.user_metadata?.job_preferences,
     };
     return <Dashboard onLogout={handleLogout} user={userMetadata} />;
   }

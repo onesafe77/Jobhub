@@ -11,38 +11,38 @@ export const Footer: React.FC = () => {
   return (
     <footer className="bg-slate-900 pt-20 pb-8 border-t border-slate-800">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* TOP SECTION: 4 COLUMNS */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8 mb-20">
-          
+
           {/* COLUMN 1: BRAND */}
           <div className="flex flex-col items-start">
-             <div className="flex items-center gap-2 mb-6 text-white group cursor-default">
-               <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-brand-900/20 group-hover:scale-105 transition-transform">
-                 <Sparkles size={18} fill="currentColor" />
-               </div>
-               <span className="font-bold text-xl tracking-tight">JobHub</span>
-             </div>
-             <p className="text-slate-400 text-base leading-relaxed mb-8 max-w-[280px]">
-               AI-powered job search untuk fresh graduates di Indonesia.
-             </p>
-             <div className="flex gap-4">
-               {[
-                 { icon: <Linkedin size={20} />, href: '#' },
-                 { icon: <Twitter size={20} />, href: '#' },
-                 { icon: <Instagram size={20} />, href: '#' },
-                 { icon: <TikTokIcon size={20} />, href: '#' }
-               ].map((social, i) => (
-                 <a 
-                   key={i} 
-                   href={social.href}
-                   className="w-9 h-9 bg-slate-800 text-white rounded-lg flex items-center justify-center hover:bg-brand-600 hover:scale-110 transition-all duration-300 shadow-sm"
-                   aria-label={`Social link ${i}`}
-                 >
-                   {social.icon}
-                 </a>
-               ))}
-             </div>
+            <div className="flex items-center gap-2 mb-6 text-white group cursor-default">
+              <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-brand-900/20 group-hover:scale-105 transition-transform">
+                <Sparkles size={18} fill="currentColor" />
+              </div>
+              <span className="font-bold text-xl tracking-tight">Jobs Agent</span>
+            </div>
+            <p className="text-slate-400 text-base leading-relaxed mb-8 max-w-[280px]">
+              AI-powered job search untuk fresh graduates di Indonesia.
+            </p>
+            <div className="flex gap-4">
+              {[
+                { icon: <Linkedin size={20} />, href: '#' },
+                { icon: <Twitter size={20} />, href: '#' },
+                { icon: <Instagram size={20} />, href: '#' },
+                { icon: <TikTokIcon size={20} />, href: '#' }
+              ].map((social, i) => (
+                <a
+                  key={i}
+                  href={social.href}
+                  className="w-9 h-9 bg-slate-800 text-white rounded-lg flex items-center justify-center hover:bg-brand-600 hover:scale-110 transition-all duration-300 shadow-sm"
+                  aria-label={`Social link ${i}`}
+                >
+                  {social.icon}
+                </a>
+              ))}
+            </div>
           </div>
 
           {/* COLUMN 2: PRODUCT */}
@@ -99,11 +99,11 @@ export const Footer: React.FC = () => {
           <p className="text-slate-400 text-base mb-8">
             Dapatkan tips job search dan update produk terbaru
           </p>
-          
+
           <div className="w-full max-w-[500px] relative">
-            <input 
-              type="email" 
-              placeholder="your@email.com" 
+            <input
+              type="email"
+              placeholder="your@email.com"
               className="w-full h-[52px] bg-slate-800 border border-slate-700 rounded-xl px-4 pr-36 text-white placeholder:text-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
             />
             <button className="absolute right-1 top-1 bottom-1 bg-brand-600 hover:bg-brand-500 text-white font-semibold px-6 rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-brand-900/20">
@@ -134,9 +134,9 @@ export const Footer: React.FC = () => {
         {/* BOTTOM SECTION */}
         <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="text-slate-500 text-sm order-2 md:order-1">
-            &copy; 2026 JobHub. All rights reserved.
+            &copy; 2026 Jobs Agent. All rights reserved.
           </div>
-          
+
           <div className="flex flex-wrap justify-center gap-6 md:gap-8 order-1 md:order-2">
             {['Privacy Policy', 'Terms of Service', 'Cookie Policy', 'Sitemap'].map((link) => (
               <a key={link} href="#" className="text-slate-500 hover:text-slate-300 hover:underline text-sm transition-colors">
@@ -144,7 +144,7 @@ export const Footer: React.FC = () => {
               </a>
             ))}
           </div>
-          
+
           <div className="flex items-center gap-2 text-slate-500 text-sm order-3">
             <span className="text-lg leading-none">🇮🇩</span>
             <span>Made with <span className="text-red-500 animate-pulse">❤️</span> in Indonesia</span>

@@ -22,7 +22,7 @@ const NotionIcon = () => (
 
 const OpenAIIcon = () => (
   <svg viewBox="0 0 24 24" className="w-12 h-12" fill="currentColor">
-    <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1195 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.3979-.667zM12.0143 5.7595 5.8143 2.3951V.0666a.0758.0758 0 0 1 .038-.0616L10.6876-2.196a4.504 4.504 0 0 1 6.1456 1.6465 4.4944 4.4944 0 0 1 .5346 3.0137l-.142-.0853-4.783-2.763a.7617.7617 0 0 0-.7759 0zm-7.794 8.7196 5.8097-3.3543V5.5476L7.995 4.3643a.0758.0758 0 0 1-.0379-.0616V-1.2949a4.504 4.504 0 0 1 4.504-4.4993 4.4802 4.4802 0 0 1 2.8669 1.0409l-.1419.0804-4.783 2.763a.7712.7712 0 0 0-.3927.6765v6.7321z" transform="translate(1 3)"/>
+    <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1195 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.3979-.667zM12.0143 5.7595 5.8143 2.3951V.0666a.0758.0758 0 0 1 .038-.0616L10.6876-2.196a4.504 4.504 0 0 1 6.1456 1.6465 4.4944 4.4944 0 0 1 .5346 3.0137l-.142-.0853-4.783-2.763a.7617.7617 0 0 0-.7759 0zm-7.794 8.7196 5.8097-3.3543V5.5476L7.995 4.3643a.0758.0758 0 0 1-.0379-.0616V-1.2949a4.504 4.504 0 0 1 4.504-4.4993 4.4802 4.4802 0 0 1 2.8669 1.0409l-.1419.0804-4.783 2.763a.7712.7712 0 0 0-.3927.6765v6.7321z" transform="translate(1 3)" />
   </svg>
 );
 
@@ -37,7 +37,7 @@ const GoogleIcon = () => (
 
 const ClaudeIcon = () => (
   <svg viewBox="0 0 24 24" className="w-12 h-12" fill="currentColor">
-    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 21.6C6.698 21.6 2.4 17.302 2.4 12S6.698 2.4 12 2.4 21.6 6.698 21.6 12 17.302 21.6 12 21.6z" opacity="0.2"/>
+    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 21.6C6.698 21.6 2.4 17.302 2.4 12S6.698 2.4 12 2.4 21.6 6.698 21.6 12 17.302 21.6 12 21.6z" opacity="0.2" />
     <path d="M8.5 17h2.5l.5-1.5h3l.5 1.5h2.5L13.5 7h-3L8.5 17zm4.25-6.5.75 2.5h-1.5l.75-2.5z" />
   </svg>
 );
@@ -59,7 +59,7 @@ export const Platforms: React.FC = () => {
   return (
     <section className="py-24 lg:py-32 bg-white border-t border-slate-100" id="platform">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Header */}
         <div className="text-center max-w-4xl mx-auto mb-16 lg:mb-20">
           <div className="text-brand-600 font-bold text-[13px] tracking-wider uppercase mb-3">
@@ -69,14 +69,14 @@ export const Platforms: React.FC = () => {
             Search di 10+ Platform Sekaligus
           </h2>
           <p className="text-lg lg:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            JobHub otomatis mencari lowongan dari semua platform job terbesar di Indonesia. Satu search, semua hasil.
+            Jobs Agent otomatis mencari lowongan dari semua platform job terbesar di Indonesia. Satu search, semua hasil.
           </p>
         </div>
 
         {/* Platform Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-8 max-w-[1200px] mx-auto mb-20 lg:mb-28">
           {platforms.map((platform, i) => (
-            <div 
+            <div
               key={i}
               className="group bg-white rounded-2xl border border-slate-200 p-6 flex items-center justify-center relative hover:border-blue-300 hover:shadow-[0_12px_24px_rgba(37,99,235,0.08)] hover:-translate-y-1 transition-all duration-300 aspect-[220/140] h-[140px]"
             >
@@ -85,8 +85,8 @@ export const Platforms: React.FC = () => {
                   {platform.count}
                 </span>
               </div>
-              
-              <img 
+
+              <img
                 src={`https://logo.clearbit.com/${platform.domain}?size=160`}
                 alt={`${platform.name} logo`}
                 className="max-w-[120px] max-h-[50px] object-contain filter grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500"
@@ -107,14 +107,14 @@ export const Platforms: React.FC = () => {
           <h3 className="text-2xl lg:text-[28px] font-bold text-slate-900 text-center mb-10">
             Integrasi dengan Tools Favoritmu
           </h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-6 justify-center">
-            
+
             {/* Notion Card */}
             <div className="bg-white rounded-2xl border border-slate-200 p-8 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 group flex flex-col h-full">
               <div className="flex justify-between items-start mb-6">
                 <div className="p-3 bg-slate-50 rounded-xl group-hover:scale-110 transition-transform duration-300">
-                    <NotionIcon />
+                  <NotionIcon />
                 </div>
                 <span className="bg-green-50 text-green-700 border border-green-100 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
                   Popular
@@ -133,7 +133,7 @@ export const Platforms: React.FC = () => {
             <div className="bg-white rounded-2xl border border-slate-200 p-8 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 group flex flex-col h-full">
               <div className="flex justify-between items-start mb-6">
                 <div className="p-3 bg-slate-50 rounded-xl group-hover:scale-110 transition-transform duration-300">
-                    <OpenAIIcon />
+                  <OpenAIIcon />
                 </div>
                 <span className="bg-purple-50 text-purple-700 border border-purple-100 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
                   AI
@@ -152,7 +152,7 @@ export const Platforms: React.FC = () => {
             <div className="bg-white rounded-2xl border border-slate-200 p-8 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 group flex flex-col h-full">
               <div className="flex justify-between items-start mb-6">
                 <div className="p-3 bg-slate-50 rounded-xl group-hover:scale-110 transition-transform duration-300 text-orange-600">
-                    <ClaudeIcon />
+                  <ClaudeIcon />
                 </div>
                 <span className="bg-orange-50 text-orange-700 border border-orange-100 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
                   Smart
@@ -171,7 +171,7 @@ export const Platforms: React.FC = () => {
             <div className="bg-white rounded-2xl border border-slate-200 p-8 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 group flex flex-col h-full">
               <div className="flex justify-between items-start mb-6">
                 <div className="p-3 bg-slate-50 rounded-xl group-hover:scale-110 transition-transform duration-300">
-                    <GeminiIcon />
+                  <GeminiIcon />
                 </div>
                 <span className="bg-blue-50 text-blue-700 border border-blue-100 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
                   Google
@@ -190,7 +190,7 @@ export const Platforms: React.FC = () => {
             <div className="bg-white rounded-2xl border border-slate-200 p-8 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 group flex flex-col h-full">
               <div className="flex justify-between items-start mb-6">
                 <div className="p-3 bg-slate-50 rounded-xl group-hover:scale-110 transition-transform duration-300">
-                    <GoogleIcon />
+                  <GoogleIcon />
                 </div>
                 <span className="bg-blue-50 text-blue-700 border border-blue-100 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
                   Available

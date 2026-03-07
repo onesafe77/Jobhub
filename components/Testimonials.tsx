@@ -6,9 +6,9 @@ const testimonials = [
     name: "Sarah Wijaya",
     role: "Frontend Developer",
     company: "GoTo",
-    companyDomain: "gojek.com", 
+    companyDomain: "gojek.com",
     image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    quote: "JobHub helped me land my dream job at GoTo in just 2 weeks! The AI match feature saved me so much time matching my skills with requirements.",
+    quote: "Jobs Agent helped me land my dream job at GoTo in just 2 weeks! The AI match feature saved me so much time matching my skills with requirements.",
     rating: 5
   },
   {
@@ -58,21 +58,21 @@ export const Testimonials: React.FC = () => {
   return (
     <section className="py-24 lg:py-32 bg-slate-50 relative border-t border-slate-200" id="testimonials">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-16 lg:mb-20">
           <h2 className="text-4xl lg:text-[52px] font-bold text-slate-900 mb-6 leading-tight">
             Dipercaya oleh 5,000+ Fresh Graduates
           </h2>
           <p className="text-lg lg:text-xl text-slate-600">
-            Lihat apa kata mereka tentang JobHub
+            Lihat apa kata mereka tentang Jobs Agent
           </p>
         </div>
 
         {/* Testimonials Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
           {testimonials.map((testimonial, idx) => (
-            <div 
+            <div
               key={idx}
               className="bg-white rounded-[20px] p-8 border-[1.5px] border-slate-200 shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 flex flex-col"
             >
@@ -90,8 +90,8 @@ export const Testimonials: React.FC = () => {
 
               {/* Author */}
               <div className="flex items-center gap-4 pt-6 border-t border-slate-100">
-                <img 
-                  src={testimonial.image} 
+                <img
+                  src={testimonial.image}
                   alt={testimonial.name}
                   className="w-12 h-12 rounded-full object-cover border border-slate-200"
                 />
@@ -99,7 +99,7 @@ export const Testimonials: React.FC = () => {
                   <div className="font-bold text-slate-900 truncate">{testimonial.name}</div>
                   <div className="text-sm text-slate-500 truncate">{testimonial.role}</div>
                 </div>
-                <img 
+                <img
                   src={`https://logo.clearbit.com/${testimonial.companyDomain}`}
                   alt={testimonial.company}
                   className="w-6 h-6 object-contain opacity-80"
@@ -112,7 +112,7 @@ export const Testimonials: React.FC = () => {
         {/* Trust Badges */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
           {badges.map((badge, idx) => (
-            <div 
+            <div
               key={idx}
               className="bg-white rounded-xl border border-slate-200 p-4 flex flex-col items-center text-center shadow-sm hover:border-brand-200 transition-colors"
             >
