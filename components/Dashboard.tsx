@@ -1406,7 +1406,6 @@ const JobSearch: React.FC<{
             {/* Minimal Floating Nav for Empty State */}
             <div className="absolute top-4 left-0 w-full px-6 flex justify-between items-center z-40">
               <div className="flex flex-col text-left">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status: Jobs Agent Active</span>
                 <p className="text-sm font-bold text-slate-900">Welcome, {user?.full_name?.split(' ')[0] || 'User'} ✨</p>
               </div>
               <button
