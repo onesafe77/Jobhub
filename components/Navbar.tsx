@@ -30,10 +30,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onLoginClick, onSignUpClick }) =
       >
         {/* Logo */}
         <div className="flex items-center gap-2 cursor-pointer group">
-          <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-brand-500/30 group-hover:scale-105 transition-transform">
-            <Sparkles size={18} fill="currentColor" />
-          </div>
-          <span className="font-bold text-xl tracking-tight text-slate-900">Jobs Agent</span>
+          <img src="/logo.png" alt="JobsAgent Logo" className="w-10 h-10 object-contain drop-shadow-md group-hover:scale-105 transition-transform mix-blend-multiply" />
         </div>
 
         {/* Menu - Hidden on mobile */}

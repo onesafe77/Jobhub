@@ -267,10 +267,7 @@ export const OnboardingSurvey: React.FC<OnboardingSurveyProps> = ({ onComplete, 
             <div className="max-w-2xl w-full relative z-10 my-8">
                 {/* Header branding */}
                 <div className="flex items-center justify-center gap-3 mb-10 animate-fade-in-up">
-                    <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center shadow-lg">
-                        <Sparkles size={24} fill="currentColor" className="text-white" />
-                    </div>
-                    <span className="font-extrabold text-2xl tracking-tight text-slate-900">Jobs Agent</span>
+                    <img src="/logo.png" alt="JobsAgent Logo" className="w-[160px] h-auto object-contain drop-shadow-md mix-blend-multiply" />
                 </div>
 
                 {/* Progress Indicators */}

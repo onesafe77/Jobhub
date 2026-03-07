@@ -4562,10 +4562,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
         ${sidebarOpen ? 'w-[280px] translate-x-0 opacity-100' : 'w-0 -translate-x-full lg:translate-x-0 opacity-0 lg:opacity-100 pointer-events-none lg:pointer-events-auto overflow-hidden'}
       `}>
         <div className="p-6 flex items-center gap-3">
-          <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-brand-500/30">
-            <Star size={18} fill="currentColor" />
-          </div>
-          <span className="font-bold text-xl tracking-tight text-slate-900">Jobs Agent</span>
+          <img src="/logo.png" alt="JobsAgent Logo" className="w-[140px] h-auto object-contain drop-shadow-sm mix-blend-multiply" />
           <button onClick={() => setSidebarOpen(false)} className="ml-auto text-slate-400 p-2 hover:bg-slate-50 rounded-lg transition-colors border border-transparent hover:border-slate-100">
             <ChevronLeft size={20} className="hidden lg:block" />
             <X size={24} className="block lg:hidden" />

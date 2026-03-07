@@ -34,6 +34,9 @@ const App: React.FC = () => {
         }
       }
       setLoading(false);
+    }).catch(error => {
+      console.error("Supabase connection error:", error);
+      setLoading(false); // Stop loading even if there's an error
     });
 
     // Listen for auth changes

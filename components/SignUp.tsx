@@ -60,10 +60,9 @@ export const SignUp: React.FC<SignUpProps> = ({ onLoginClick, onSignUpComplete, 
 
             <div className="relative z-10 animate-fade-in-up">
                <div className="flex items-center gap-3 mb-16">
-                  <div className="w-12 h-12 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
-                     <Sparkles size={24} fill="currentColor" className="text-purple-400" />
+                  <div className="bg-white p-3 rounded-2xl shadow-xl shadow-brand-500/10 inline-flex">
+                     <img src="/logo.png" alt="JobsAgent Logo" className="w-[140px] h-auto object-contain" />
                   </div>
-                  <span className="font-extrabold text-2xl tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70">Jobs Agent</span>
                </div>
 
                <h1 className="text-5xl xl:text-6xl font-extrabold mb-8 leading-[1.1] tracking-tight">
@@ -138,10 +137,7 @@ export const SignUp: React.FC<SignUpProps> = ({ onLoginClick, onSignUpComplete, 
 
                {/* Mobile Logo */}
                <div className="lg:hidden flex items-center gap-3 mb-10 justify-center">
-                  <div className="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center shadow-lg shadow-brand-500/30">
-                     <Sparkles size={20} fill="currentColor" className="text-white" />
-                  </div>
-                  <span className="font-extrabold text-2xl tracking-tight text-slate-900">Jobs Agent</span>
+                  <img src="/logo.png" alt="JobsAgent Logo" className="w-[140px] h-auto object-contain mix-blend-multiply" />
                </div>
 
                <div className="mb-10 text-center lg:text-left">

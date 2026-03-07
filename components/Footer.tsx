@@ -18,10 +18,9 @@ export const Footer: React.FC = () => {
           {/* COLUMN 1: BRAND */}
           <div className="flex flex-col items-start">
             <div className="flex items-center gap-2 mb-6 text-white group cursor-default">
-              <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-brand-900/20 group-hover:scale-105 transition-transform">
-                <Sparkles size={18} fill="currentColor" />
+              <div className="bg-white p-2 rounded-xl inline-flex drop-shadow-md group-hover:scale-105 transition-transform">
+                <img src="/logo.png" alt="JobsAgent Logo" className="w-10 h-10 object-contain" />
               </div>
-              <span className="font-bold text-xl tracking-tight">Jobs Agent</span>
             </div>
             <p className="text-slate-400 text-base leading-relaxed mb-8 max-w-[280px]">
               AI-powered job search untuk fresh graduates di Indonesia.
