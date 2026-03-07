@@ -482,10 +482,10 @@ const TopBar: React.FC<{
   onNotificationClick?: () => void;
   unreadNotifications?: number;
 }> = ({ title, subtitle, onNotificationClick, unreadNotifications = 0 }) => (
-  <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 pb-4 border-b border-slate-200/60 gap-4">
-    <div className="flex flex-col">
-      <h1 className="text-[28px] sm:text-[32px] font-[900] text-slate-900 tracking-tight leading-tight">{title}</h1>
-      {subtitle && <p className="text-[15px] sm:text-[17px] text-slate-500 font-medium mt-1">{subtitle}</p>}
+  <div className="flex flex-row items-center justify-between mb-6 pb-4 border-b border-slate-200/60 gap-4">
+    <div className="flex flex-col flex-1 shrink min-w-0">
+      <h1 className="text-[24px] sm:text-[32px] font-[900] text-slate-900 tracking-tight leading-tight truncate">{title}</h1>
+      {subtitle && <p className="text-[13px] sm:text-[15px] text-slate-500 font-medium mt-1 truncate">{subtitle}</p>}
     </div>
     <div className="flex items-center gap-3">
       {onNotificationClick && (
@@ -1186,9 +1186,9 @@ const JobSearch: React.FC<{
             unreadNotifications={unreadCount}
           />
 
-          <div className="flex flex-col gap-3 animate-fade-in-up">
-            <div className="flex gap-3">
-              <div className="flex-1 relative group z-30">
+          <div className="flex flex-col gap-3 animate-fade-in-up pr-2">
+            <div className={`flex flex-col ${isSplitView ? 'xl:flex-row flex-wrap' : 'md:flex-row'} gap-3`}>
+              <div className="flex-1 min-w-[200px] relative group z-30">
                 <div className="relative flex items-center bg-white rounded-xl p-2 shadow-sm border border-slate-200 focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-500/10 transition-all duration-300 h-[56px]">
                   <Search className="ml-3 text-slate-400 shrink-0" size={20} />
                   <input
@@ -1202,7 +1202,7 @@ const JobSearch: React.FC<{
                 </div>
               </div>
 
-              <div className="w-[200px] lg:w-[260px] relative z-30">
+              <div className={`w-full ${isSplitView ? 'xl:w-[200px]' : 'md:w-[200px] lg:w-[260px]'} relative z-30`}>
                 <div className="relative flex items-center bg-white rounded-xl p-2 shadow-sm border border-slate-200 focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-500/10 transition-all duration-300 h-[56px]">
                   <MapPin className="ml-3 text-slate-400 shrink-0" size={20} />
                   <input
@@ -1218,10 +1218,10 @@ const JobSearch: React.FC<{
 
               <button
                 onClick={handleSearch}
-                className="h-[56px] px-6 bg-gradient-to-r from-brand-600 to-blue-600 hover:from-brand-700 hover:to-blue-700 text-white rounded-xl font-bold transition-all shadow-md flex items-center gap-2 shrink-0"
+                className={`h-[56px] px-6 bg-gradient-to-r from-brand-600 to-blue-600 hover:from-brand-700 hover:to-blue-700 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 shrink-0 ${isSplitView ? 'w-full xl:w-auto' : 'w-full md:w-auto'}`}
               >
                 <Search size={20} />
-                <span className="hidden lg:inline">Cari Pekerjaan</span>
+                <span className={`hidden sm:inline ${isSplitView ? 'xl:inline' : 'lg:inline'}`}>Cari Pekerjaan</span>
               </button>
             </div>
 
@@ -4427,7 +4427,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
           <div className={currentView === 'detail' ? 'flex flex-col lg:flex-row gap-6 h-[calc(100vh-100px)] overflow-hidden' : ''}>
             {currentView === 'detail' ? (
               // In detail mode: show job list only if there are results, otherwise hide left panel
-              <div className="w-full lg:w-[400px] xl:w-[450px] flex-shrink-0 h-full overflow-y-auto custom-scrollbar pr-2 lg:block hidden">
+              <div className="w-full lg:w-[400px] xl:w-[450px] flex-shrink-0 h-full overflow-y-auto custom-scrollbar pr-4 mr-2 lg:block hidden">
                 <JobSearch user={user} onJobClick={handleJobClick} onViewChange={setCurrentView} userProfile={userProfile} unreadCount={unreadCount} isSplitView={true} selectedJob={selectedJob} />
               </div>
             ) : (
