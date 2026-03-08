@@ -54,20 +54,24 @@ export const SignUp: React.FC<SignUpProps> = ({ onLoginClick, onSignUpComplete, 
          <div className="hidden lg:flex lg:w-[45%] bg-[#0B0F19] relative overflow-hidden flex-col justify-between p-12 lg:p-20 text-white border-r border-white/5 shadow-2xl z-10">
             {/* Elegant glowing orbs */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-               <div className="absolute top-[10%] left-[-10%] w-[60%] h-[60%] bg-indigo-500/15 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-10000"></div>
-               <div className="absolute bottom-[-10%] right-[-20%] w-[70%] h-[70%] bg-purple-600/15 rounded-full blur-[100px] mix-blend-screen"></div>
+               <div className="absolute top-[10%] left-[-10%] w-[60%] h-[60%] bg-brand-400/15 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-10000"></div>
+               <div className="absolute bottom-[-10%] right-[-20%] w-[70%] h-[70%] bg-brand-600/15 rounded-full blur-[100px] mix-blend-screen"></div>
             </div>
 
             <div className="relative z-10 animate-fade-in-up">
                <div className="flex items-center gap-3 mb-16">
-                  <div className="bg-white p-3 rounded-2xl shadow-xl shadow-brand-500/10 inline-flex">
-                     <img src="/logo.png" alt="JobsAgent Logo" className="w-[140px] h-auto object-contain" />
+                  <img src="/logo-icon.png" alt="JobsAgent" className="w-14 h-14 object-contain rounded-2xl shadow-lg" />
+                  <div className="flex flex-col">
+                     <span className="font-extrabold text-[24px] tracking-tight leading-tight">
+                        <span className="text-white">Jobs</span><span style={{ color: '#00B4D8' }}>A</span><span className="text-white">gen</span><span style={{ color: '#00B4D8' }}>t</span>
+                     </span>
+                     <span className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">AI-Powered Career Network</span>
                   </div>
                </div>
 
                <h1 className="text-5xl xl:text-6xl font-extrabold mb-8 leading-[1.1] tracking-tight">
                   Join 5,000+ <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">Future Talents.</span>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 to-brand-300">Future Talents.</span>
                </h1>
                <p className="text-xl text-slate-400 max-w-md leading-relaxed mb-12 font-medium">
                   Akses jutaan lowongan dari 10+ platform dalam satu dashboard yang pintar. Gratis selamanya untuk mulai.
@@ -92,8 +96,8 @@ export const SignUp: React.FC<SignUpProps> = ({ onLoginClick, onSignUpComplete, 
             {/* Glassmorphism Testimonial */}
             <div className="relative z-10 mt-auto animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-3xl p-8 max-w-lg shadow-[0_8px_32px_rgba(0,0,0,0.2)] relative overflow-hidden group hover:bg-white/[0.05] transition-all duration-500">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-purple-500/20 to-transparent opacity-50 blur-xl"></div>
-                  <div className="flex items-center gap-1.5 text-purple-400 mb-5">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-brand-400/20 to-transparent opacity-50 blur-xl"></div>
+                  <div className="flex items-center gap-1.5 text-brand-400 mb-5">
                      {[1, 2, 3, 4, 5].map(i => <span key={i} className="text-lg">★</span>)}
                   </div>
                   <p className="text-lg font-medium mb-8 leading-relaxed text-slate-200 relative z-10">
@@ -101,12 +105,12 @@ export const SignUp: React.FC<SignUpProps> = ({ onLoginClick, onSignUpComplete, 
                   </p>
                   <div className="flex items-center gap-4 relative z-10">
                      <div className="relative">
-                        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80" alt="Sarah" className="w-14 h-14 rounded-full border-2 border-purple-500/30 object-cover" />
+                        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80" alt="Sarah" className="w-14 h-14 rounded-full border-2 border-brand-500/30 object-cover" />
                         <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-[#0B0F19] rounded-full"></div>
                      </div>
                      <div>
                         <div className="font-bold text-white text-base">Sarah Wijaya</div>
-                        <div className="text-sm text-purple-300 font-medium">Product Designer</div>
+                        <div className="text-sm text-brand-300 font-medium">Product Designer</div>
                      </div>
                   </div>
                </div>
@@ -125,19 +129,22 @@ export const SignUp: React.FC<SignUpProps> = ({ onLoginClick, onSignUpComplete, 
          <div className="w-full lg:w-[55%] flex items-center justify-center p-6 sm:p-12 lg:p-16 xl:p-24 relative overflow-hidden bg-white">
             <button
                onClick={onBackToLanding}
-               className="absolute top-8 left-8 text-slate-400 hover:text-slate-900 flex items-center gap-2 font-bold text-sm lg:hidden transition-colors bg-slate-100 hover:bg-slate-200 py-2 px-4 rounded-full z-20"
+               className="absolute top-8 left-8 text-slate-400 hover:text-slate-900 flex items-center gap-2 font-bold text-sm transition-colors bg-slate-100 hover:bg-slate-200 py-2 px-4 rounded-full z-20"
             >
                <ArrowLeft size={16} /> Kembali
             </button>
 
             {/* Soft background shape for form side */}
-            <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-50 rounded-full blur-[120px] opacity-60 pointer-events-none translate-x-1/3 translate-y-1/3"></div>
+            <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-brand-50 rounded-full blur-[120px] opacity-60 pointer-events-none translate-x-1/3 translate-y-1/3"></div>
 
             <div className="w-full max-w-[420px] relative z-10 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
 
                {/* Mobile Logo */}
                <div className="lg:hidden flex items-center gap-3 mb-10 justify-center">
-                  <img src="/logo.png" alt="JobsAgent Logo" className="w-[140px] h-auto object-contain mix-blend-multiply" />
+                  <img src="/logo-icon.png" alt="JobsAgent" className="w-12 h-12 object-contain rounded-xl" />
+                  <span className="font-extrabold text-[22px] tracking-tight">
+                     <span style={{ color: '#0B1F3F' }}>Jobs</span><span style={{ color: '#00B4D8' }}>A</span><span style={{ color: '#0B1F3F' }}>gen</span><span style={{ color: '#00B4D8' }}>t</span>
+                  </span>
                </div>
 
                <div className="mb-10 text-center lg:text-left">

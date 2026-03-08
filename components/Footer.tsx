@@ -17,9 +17,13 @@ export const Footer: React.FC = () => {
 
           {/* COLUMN 1: BRAND */}
           <div className="flex flex-col items-start">
-            <div className="flex items-center gap-2 mb-6 text-white group cursor-default">
-              <div className="bg-white p-2 rounded-xl inline-flex drop-shadow-md group-hover:scale-105 transition-transform">
-                <img src="/logo.png" alt="JobsAgent Logo" className="w-10 h-10 object-contain" />
+            <div className="flex items-center gap-2.5 mb-6 text-white group cursor-default">
+              <img src="/logo-icon.png" alt="JobsAgent" className="w-12 h-12 object-contain rounded-xl group-hover:scale-105 transition-transform" />
+              <div className="flex flex-col">
+                <span className="font-extrabold text-[20px] tracking-tight leading-tight">
+                  <span className="text-white">Jobs</span><span style={{ color: '#00B4D8' }}>A</span><span className="text-white">gen</span><span style={{ color: '#00B4D8' }}>t</span>
+                </span>
+                <span className="text-[9px] text-slate-500 font-semibold tracking-wider uppercase">AI-Powered Career Network</span>
               </div>
             </div>
             <p className="text-slate-400 text-base leading-relaxed mb-8 max-w-[280px]">

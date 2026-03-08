@@ -88,6 +88,7 @@ export const Pricing: React.FC<{ onSelectPlan?: (plan: 'free' | 'lite' | 'pro') 
                                 { text: 'Perbaiki KESELURUHAN CV', included: false },
                                 { text: 'Chat Asisten Karir (Tanya AI)', included: false },
                                 { text: 'Info & Loker BUMN/CPNS', included: false },
+                                { text: 'Akses Salary Checker AI', included: true },
                             ].map((feature, i) => (
                                 <div key={i} className={`flex items-center gap-3 text-sm ${feature.included ? 'text-slate-700 font-medium' : 'text-slate-400 line-through'}`}>
                                     {feature.included ? (
@@ -102,25 +103,25 @@ export const Pricing: React.FC<{ onSelectPlan?: (plan: 'free' | 'lite' | 'pro') 
 
                         <button
                             onClick={() => onSelectPlan && onSelectPlan('lite')}
-                            className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 text-white font-bold shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:-translate-y-0.5 transition-all duration-200"
+                            className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-brand-400 text-white font-bold shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:-translate-y-0.5 transition-all duration-200"
                         >
                             Pilih Paket Lite
                         </button>
                     </div>
 
                     {/* Pro Card */}
-                    <div className="bg-white rounded-2xl p-8 border border-purple-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-lg transition-all duration-300 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50 rounded-bl-full -mr-4 -mt-4 z-0"></div>
+                    <div className="bg-white rounded-2xl p-8 border border-brand-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-lg transition-all duration-300 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-brand-50 rounded-bl-full -mr-4 -mt-4 z-0"></div>
                         <div className="relative z-10">
                             <div className="flex justify-between items-start mb-4">
-                                <div className="text-[13px] font-bold text-purple-600 uppercase tracking-wider">Pro</div>
-                                <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide">
+                                <div className="text-[13px] font-bold text-brand-600 uppercase tracking-wider">Pro</div>
+                                <span className="bg-brand-100 text-brand-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide">
                                     💎 Best Value
                                 </span>
                             </div>
 
                             <div className="flex items-baseline mb-2">
-                                <span className="text-[48px] font-bold text-purple-600 font-mono tracking-tight">49.9k</span>
+                                <span className="text-[48px] font-bold text-brand-600 font-mono tracking-tight">49.9k</span>
                                 <span className="text-slate-500 ml-2">/bulan</span>
                             </div>
                             <p className="text-slate-600 mb-8 min-h-[48px] flex items-center">Buka semua fitur & cepat dapat kerja</p>
@@ -134,9 +135,10 @@ export const Pricing: React.FC<{ onSelectPlan?: (plan: 'free' | 'lite' | 'pro') 
                                     { text: 'Unlimited Chat Asisten AI Karir', included: true },
                                     { text: 'Akses Info & Loker CPNS/BUMN', included: true },
                                     { text: 'Unlimited AI Cover Letter', included: true },
+                                    { text: 'Akses Salary Checker AI', included: true },
                                 ].map((feature, i) => (
                                     <div key={i} className="flex items-center gap-3 text-sm text-slate-700 font-bold">
-                                        <Sparkles size={16} className="text-purple-600 flex-shrink-0" />
+                                        <Sparkles size={16} className="text-brand-600 flex-shrink-0" />
                                         {feature.text}
                                     </div>
                                 ))}
@@ -144,7 +146,7 @@ export const Pricing: React.FC<{ onSelectPlan?: (plan: 'free' | 'lite' | 'pro') 
 
                             <button
                                 onClick={() => onSelectPlan && onSelectPlan('pro')}
-                                className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:-translate-y-0.5 transition-all duration-200"
+                                className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-700 to-brand-500 text-white font-bold shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:-translate-y-0.5 transition-all duration-200"
                             >
                                 Upgrade ke PRO
                             </button>

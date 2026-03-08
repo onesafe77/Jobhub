@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard, Search, Briefcase, ScanLine, Coins, Settings,
   LogOut, Bell, ChevronRight, TrendingUp, Calendar, FileText,
@@ -10,11 +10,12 @@ import {
 } from 'lucide-react';
 import { scraperService, InstagramPost } from "../lib/scraperService";
 import { supabase } from "../lib/supabase";
-import { quickMatchScore, loadProfile, saveProfile, clearProfile, UserProfile, analyzeCVForATS, ATSAnalysisResult, autoFixCVIssue, generateCoverLetter } from "../lib/openai";
+import { quickMatchScore, loadProfile, saveProfile, clearProfile, UserProfile, analyzeCVForATS, ATSAnalysisResult, autoFixCVIssue, generateCoverLetter, estimateSalaryFromCV, SalaryEstimateResult } from "../lib/openai";
 import { CVBuilder } from './CVBuilder';
 import { Pricing } from './Pricing';
 import { CVUpload } from './CVUpload';
 import { projectTasksService, ProjectTask, NewProjectTask } from "../lib/projectTasks";
+import { SalaryCheckerView } from './SalaryCheckerView';
 import { favoriteJobsService, FavoriteJob, NewFavoriteJob } from "../lib/favoriteJobs";
 import { extractTextFromPDF } from '../lib/pdfParser';
 
@@ -364,7 +365,7 @@ const MOCK_JOBS: Job[] = [
     title: "Data Scientist",
     company: "Bukalapak",
     logo: "B",
-    logoColor: "bg-purple-600",
+    logoColor: "bg-brand-600",
     source: "TechInAsia",
     matchScore: 78,
     location: "Jakarta",
@@ -511,7 +512,7 @@ const StatCard: React.FC<{
   trend?: string;
   trendUp?: boolean;
 }> = ({ icon, colorClass, label, value, trend, trendUp }) => (
-  <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-md transition-all hover:-translate-y-1">
+  <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-3d-hover transition-all hover-tilt-3d">
     <div className="flex items-start justify-between mb-4">
       <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colorClass}`}>
         {icon}
@@ -811,7 +812,7 @@ const DashboardHome: React.FC<{ onViewChange: (view: DashboardView) => void; use
   };
 
   return (
-    <div className="animate-fade-in space-y-8 pb-10">
+    <div className="animate-fade-in-up-3d perspective-2000 space-y-8 pb-10">
       <TopBar
         title="Dashboard"
         subtitle="Overview aktivitas pencarian kerjamu minggu ini."
@@ -823,9 +824,9 @@ const DashboardHome: React.FC<{ onViewChange: (view: DashboardView) => void; use
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left: Welcome Banner & Stats */}
         <div className="lg:col-span-2 space-y-8">
-          <div className="bg-gradient-to-r from-brand-600 to-indigo-600 rounded-[24px] p-8 text-white relative overflow-hidden shadow-lg flex flex-col justify-center min-h-[180px]">
+          <div className="bg-gradient-to-r from-brand-600 to-brand-400 rounded-[24px] p-8 text-white relative overflow-hidden shadow-3d flex flex-col justify-center min-h-[180px] hover-tilt-3d group">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-            <div className="absolute bottom-0 left-0 w-40 h-40 bg-purple-400 opacity-20 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none"></div>
+            <div className="absolute bottom-0 left-0 w-40 h-40 bg-brand-300 opacity-20 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none"></div>
 
             <div className="relative z-10">
               <h2 className="text-3xl font-bold mb-2 tracking-tight">Selamat Pagi, {user?.full_name ? user.full_name.split(' ')[0] : 'User'}! ☀️</h2>
@@ -854,7 +855,7 @@ const DashboardHome: React.FC<{ onViewChange: (view: DashboardView) => void; use
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <StatCard icon={<Star size={20} />} colorClass="text-slate-600 bg-amber-50" label="Plan" value={loading ? "..." : totalPlan.toString()} />
             <StatCard icon={<Briefcase size={20} />} colorClass="text-blue-600 bg-blue-50" label="Applied" value={loading ? "..." : totalApplied.toString()} />
-            <StatCard icon={<Calendar size={20} />} colorClass="text-purple-600 bg-purple-50" label="Interview" value={loading ? "..." : totalInterviews.toString()} />
+            <StatCard icon={<Calendar size={20} />} colorClass="text-brand-600 bg-brand-50" label="Interview" value={loading ? "..." : totalInterviews.toString()} />
             <StatCard icon={<Trophy size={20} />} colorClass="text-emerald-600 bg-emerald-50" label="Offer" value={loading ? "..." : totalOffers.toString()} />
           </div>
 
@@ -1007,6 +1008,55 @@ const JobSearch: React.FC<{
 
   const handleSearch = () => handleSearchWithParams(searchInput, locationInput);
 
+  const handleCVSearch = async () => {
+    if (!userProfile) return;
+
+    setViewState('loading');
+    const cvTag = '✨ Rekomendasi AI Sesuai CV';
+    setSearchInput(cvTag);
+    setActiveFilters({ keyword: cvTag, location: locationInput });
+
+    try {
+      console.log('[CV Search] Fetching recent jobs for broad matching...');
+
+      // Get a broad pool of recent jobs (up to 300)
+      let query = supabase
+        .from('jobs')
+        .select('*')
+        .order('posted_at', { ascending: false })
+        .limit(300);
+
+      // Still respect location if user has one set
+      if (locationInput.trim()) {
+        query = query.ilike('location', `%${locationInput.trim()}%`);
+      }
+
+      const { data: jobsData, error } = await query;
+
+      if (error) throw error;
+
+      let currentJobs = jobsData || [];
+
+      // Map and score all jobs locally
+      let scoredJobs = mapResultsToJobs(currentJobs);
+
+      // Sort by match score descending
+      scoredJobs.sort((a, b) => b.matchScore - a.matchScore);
+
+      // Filter out totally irrelevant jobs (score < 40) just to keep quality high,
+      // but keep enough to show results
+      scoredJobs = scoredJobs.filter(job => job.matchScore >= 40);
+
+      setJobs(scoredJobs);
+      setViewState('results');
+
+    } catch (error: any) {
+      console.error('[CV Search] Error:', error);
+      setViewState('results');
+      setJobs([]);
+    }
+  };
+
   const handleSearchWithParams = async (keyword: string, location: string) => {
     if (!keyword.trim() && !location.trim()) return;
 
@@ -1148,7 +1198,7 @@ const JobSearch: React.FC<{
 
   // Helper: rotate logo colors
   const getLogoColor = (index: number) => {
-    const colors = ['bg-brand-600', 'bg-green-600', 'bg-orange-500', 'bg-purple-600', 'bg-red-500', 'bg-blue-500', 'bg-teal-600', 'bg-pink-600'];
+    const colors = ['bg-brand-600', 'bg-green-600', 'bg-orange-500', 'bg-brand-600', 'bg-red-500', 'bg-blue-500', 'bg-teal-600', 'bg-pink-600'];
     return colors[index % colors.length];
   };
 
@@ -1257,7 +1307,7 @@ const JobSearch: React.FC<{
           <div className="animate-fade-in-up flex flex-col items-center justify-center py-20">
             <div className="relative w-20 h-20 mb-6 flex items-center justify-center">
               <div className="absolute inset-0 border-4 border-slate-100 border-t-brand-500 rounded-full animate-spin"></div>
-              <div className="w-10 h-10 bg-gradient-to-tr from-brand-500 to-purple-500 rounded-full animate-pulse shadow-lg shadow-brand-500/30"></div>
+              <div className="w-10 h-10 bg-gradient-to-tr from-brand-500 to-brand-300 rounded-full animate-pulse shadow-lg shadow-brand-500/30"></div>
               <Sparkles size={20} className="absolute text-white animate-ping" />
             </div>
             <h3 className="text-xl font-bold text-slate-800 mb-2">AI Sedang Mencari...</h3>
@@ -1406,7 +1456,6 @@ const JobSearch: React.FC<{
             {/* Minimal Floating Nav for Empty State */}
             <div className="absolute top-4 left-0 w-full px-6 flex justify-between items-center z-40">
               <div className="flex flex-col text-left">
-                <p className="text-sm font-bold text-slate-900">Welcome, {user?.full_name?.split(' ')[0] || 'User'} ✨</p>
               </div>
               <button
                 onClick={() => onViewChange('notifications')}
@@ -1422,12 +1471,12 @@ const JobSearch: React.FC<{
             {/* Decorative Background Orbs for AI Vibe */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[1000px] h-[500px] pointer-events-none overflow-hidden z-0 flex justify-center items-center opacity-30">
               <div className="absolute w-[400px] h-[400px] bg-brand-400/20 rounded-full blur-[100px] -translate-x-40 -translate-y-20 animate-pulse"></div>
-              <div className="absolute w-[350px] h-[350px] bg-indigo-400/20 rounded-full blur-[100px] translate-x-40 translate-y-20" style={{ animationDelay: '3s' }}></div>
+              <div className="absolute w-[350px] h-[350px] bg-brand-300/20 rounded-full blur-[100px] translate-x-40 translate-y-20" style={{ animationDelay: '3s' }}></div>
             </div>
 
             <div className="relative z-10 w-full flex flex-col items-center max-w-4xl">
               <h2 className="text-[32px] sm:text-5xl md:text-6xl font-[900] text-slate-900 mb-6 text-center tracking-tight leading-[1.1] animate-fade-in-up">
-                Cari kerja lebih<br /><span className="text-brand-600">pintar dengan AI.</span>
+                Temukan karir impian<br /><span className="text-brand-600">dalam hitungan detik.</span>
               </h2>
               <p className="text-base sm:text-lg text-slate-500 text-center mb-12 max-w-[500px] leading-relaxed animate-fade-in-up delay-100 font-medium">
                 Ketik posisi atau keahlian Anda, biar Job Agent yang mencarikan lowongan paling cocok.
@@ -1471,7 +1520,7 @@ const JobSearch: React.FC<{
 
               {userProfile && (
                 <div className="w-full flex justify-center mb-16 animate-fade-in delay-500">
-                  <button onClick={() => { let keyword = userProfile.preferred_roles?.[0] || "Pekerjaan"; setSearchInput(keyword); handleSearchWithParams(keyword, locationInput); }} className="relative bg-white/80 backdrop-blur-xl border border-brand-100 py-5 px-12 rounded-full font-black text-slate-900 flex items-center gap-4 shadow-xl hover:-translate-y-1 transition-all">
+                  <button onClick={handleCVSearch} className="relative bg-white/80 backdrop-blur-xl border border-brand-100 py-5 px-12 rounded-full font-black text-slate-900 flex items-center gap-4 shadow-xl hover:-translate-y-1 transition-all">
                     <Sparkles size={20} className="text-brand-500" />
                     <span>Dapatkan Rekomendasi Sesuai CV</span>
                   </button>
@@ -1757,7 +1806,7 @@ const JobDetail: React.FC<{ job: Job; onBack: () => void; userProfile: UserProfi
 
               <button
                 onClick={handleEasyApply}
-                className="flex-[1.5] min-w-[200px] bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white px-6 py-4 rounded-2xl font-[900] transition-all shadow-xl hover:shadow-brand-500/20 active:scale-95 flex items-center justify-center gap-2.5 uppercase tracking-wider text-[13px]"
+                className="flex-[1.5] min-w-[200px] bg-gradient-to-r from-brand-600 to-brand-400 hover:from-brand-700 hover:to-brand-500 text-white px-6 py-4 rounded-2xl font-[900] transition-all shadow-xl hover:shadow-brand-500/20 active:scale-95 flex items-center justify-center gap-2.5 uppercase tracking-wider text-[13px]"
               >
                 <Zap size={22} fill="currentColor" />
                 Easy Apply With Job Agent
@@ -1791,12 +1840,12 @@ const JobDetail: React.FC<{ job: Job; onBack: () => void; userProfile: UserProfi
                 <button
                   disabled={draftingLetter}
                   onClick={handleDraftAndDownload}
-                  className={`flex-1 px-5 bg-white border-2 border-slate-200 text-slate-600 hover:border-purple-300 hover:text-purple-700 hover:bg-purple-50 font-extrabold py-3 rounded-2xl transition-all flex items-center justify-center gap-2 uppercase tracking-wide text-[13px] ${draftingLetter ? 'opacity-70 cursor-wait' : 'active:scale-95 shadow-sm'}`}
+                  className={`flex-1 px-5 bg-white border-2 border-slate-200 text-slate-600 hover:border-brand-300 hover:text-brand-700 hover:bg-brand-50 font-extrabold py-3 rounded-2xl transition-all flex items-center justify-center gap-2 uppercase tracking-wide text-[13px] ${draftingLetter ? 'opacity-70 cursor-wait' : 'active:scale-95 shadow-sm'}`}
                 >
                   {draftingLetter ? (
-                    <><Loader2 size={20} className="animate-spin text-purple-500" /> <span>Drafting...</span></>
+                    <><Loader2 size={20} className="animate-spin text-brand-500" /> <span>Drafting...</span></>
                   ) : (
-                    <><Download size={20} className="text-purple-500" /> <span>Draft Letter</span></>
+                    <><Download size={20} className="text-brand-500" /> <span>Draft Letter</span></>
                   )}
                 </button>
               </div>
@@ -1886,30 +1935,30 @@ const JobDetail: React.FC<{ job: Job; onBack: () => void; userProfile: UserProfi
                 <button
                   onClick={handleGenerateSummary}
                   disabled={generatingSummary || !!aiSummary}
-                  className="bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold py-2.5 px-4 rounded-xl transition-all border border-purple-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-[14px] shadow-sm active:scale-95"
+                  className="bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold py-2.5 px-4 rounded-xl transition-all border border-brand-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-[14px] shadow-sm active:scale-95"
                 >
                   {generatingSummary ? (
-                    <><Sparkles className="animate-spin text-purple-500" size={16} /> Menyusun ringkasan...</>
+                    <><Sparkles className="animate-spin text-brand-500" size={16} /> Menyusun ringkasan...</>
                   ) : aiSummary ? (
                     <><CheckCircle2 className="text-emerald-500" size={16} /> Selesai Diringkas AI</>
                   ) : (
-                    <><Sparkles className="text-purple-500" size={16} /> ✨ AI Summary</>
+                    <><Sparkles className="text-brand-500" size={16} /> ✨ AI Summary</>
                   )}
                 </button>
               </div>
 
               {/* AI Summary Box */}
               {aiSummary && (
-                <div className="mb-5 p-5 bg-purple-50/50 border border-purple-100/80 rounded-2xl animate-fade-in shadow-sm relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-purple-200/20 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none transition-transform duration-500 group-hover:scale-150"></div>
-                  <h3 className="text-sm font-bold text-purple-800 mb-4 uppercase tracking-widest flex items-center gap-2">
-                    <Sparkles size={16} className="text-purple-500" /> Ringkasan Instan AI
+                <div className="mb-5 p-5 bg-brand-50/50 border border-brand-100/80 rounded-2xl animate-fade-in shadow-sm relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-brand-200/20 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none transition-transform duration-500 group-hover:scale-150"></div>
+                  <h3 className="text-sm font-bold text-brand-800 mb-4 uppercase tracking-widest flex items-center gap-2">
+                    <Sparkles size={16} className="text-brand-500" /> Ringkasan Instan AI
                   </h3>
                   <div className="space-y-3 relative z-10">
                     {aiSummary.split('\n').filter(line => line.trim().startsWith('-') || line.trim().startsWith('•') || line.trim().match(/^\d+[\.)]/)).slice(0, 5).map((bullet, idx) => (
                       <div key={idx} className="flex items-start gap-4 p-2 rounded-xl transition-colors hover:bg-white/60">
-                        <div className="text-purple-500 mt-1 select-none flex-shrink-0 bg-purple-100 p-1 rounded-md shadow-sm">
-                          <Zap size={12} strokeWidth={3} className="text-purple-600" />
+                        <div className="text-brand-500 mt-1 select-none flex-shrink-0 bg-brand-100 p-1 rounded-md shadow-sm">
+                          <Zap size={12} strokeWidth={3} className="text-brand-600" />
                         </div>
                         <div className="text-[14px] sm:text-[15px] text-slate-700 font-medium leading-relaxed">{bullet.replace(/^[-•▪*]|\d+[\.)]\s*/, '').trim()}</div>
                       </div>
@@ -2536,7 +2585,7 @@ ${cvText}`
 
             <div className="p-4 bg-white border-t border-slate-100">
               <button
-                className={`w-full py-3.5 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all ${!cvText.trim() ? 'bg-slate-300 cursor-not-allowed' : 'bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 shadow-md shadow-brand-500/20 active:scale-[0.98]'}`}
+                className={`w-full py-3.5 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all ${!cvText.trim() ? 'bg-slate-300 cursor-not-allowed' : 'bg-gradient-to-r from-brand-600 to-brand-400 hover:from-brand-700 hover:to-brand-500 shadow-md shadow-brand-500/20 active:scale-[0.98]'}`}
                 disabled={!cvText.trim() || isAnalyzing}
                 onClick={analyzeCV}
               >
@@ -2747,7 +2796,7 @@ const NotificationsView: React.FC<{ notifications: any[]; onMarkRead: (id: numbe
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
         <div>
           <h2 className="text-3xl font-extrabold text-slate-900 flex items-center gap-3">
-            <div className="bg-gradient-to-br from-brand-500 to-indigo-600 p-2.5 rounded-2xl shadow-lg shadow-brand-500/20 text-white relative">
+            <div className="bg-gradient-to-br from-brand-500 to-brand-300 p-2.5 rounded-2xl shadow-lg shadow-brand-500/20 text-white relative">
               <Bell size={28} />
               {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-4 w-4">
@@ -2792,7 +2841,7 @@ const NotificationsView: React.FC<{ notifications: any[]; onMarkRead: (id: numbe
             >
               {/* Left Accent indicator for unread */}
               {notif.unread && (
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-brand-500 to-indigo-600"></div>
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-brand-500 to-brand-300"></div>
               )}
 
               {/* Icon */}
@@ -2867,7 +2916,7 @@ const SettingsView: React.FC<{ user?: { full_name?: string; email?: string }; un
                 {userProfile?.subscriptionPlan !== 'pro' && onViewChange && (
                   <button
                     onClick={() => onViewChange('pricing')}
-                    className="ml-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold px-4 py-1.5 rounded-lg shadow-md shadow-purple-500/20 hover:shadow-purple-500/40 hover:-translate-y-0.5 transition-all flex items-center gap-1.5"
+                    className="ml-2 bg-gradient-to-r from-brand-700 to-brand-500 text-white text-xs font-bold px-4 py-1.5 rounded-lg shadow-md shadow-brand-500/20 hover:shadow-brand-500/40 hover:-translate-y-0.5 transition-all flex items-center gap-1.5"
                   >
                     <Sparkles size={12} /> Upgrade ke PRO
                   </button>
@@ -2897,7 +2946,7 @@ const SettingsView: React.FC<{ user?: { full_name?: string; email?: string }; un
             <div className="space-y-6">
               <div className="bg-slate-50 border border-brand-100 rounded-3xl text-center shadow-inner relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl -mr-10 -mt-20"></div>
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-500/10 rounded-full blur-2xl -ml-10 -mb-10"></div>
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-brand-400/10 rounded-full blur-2xl -ml-10 -mb-10"></div>
                 <div className="relative z-10 w-full mx-auto p-6 md:p-10">
                   <h2 className="text-2xl font-black text-slate-900 mb-3">Lengkapi Profil CV Anda</h2>
                   <p className="text-slate-500 text-[15px] mb-8 leading-relaxed max-w-xl mx-auto">Anda wajib melengkapi profil CV untuk mengakses fitur Jobs Agent selengkapnya. Silakan pilih salah satu opsi di bawah ini.</p>
@@ -3197,7 +3246,7 @@ const ProjectTracker: React.FC<{ unreadCount?: number }> = ({ unreadCount = 0 })
     switch (status) {
       case 'Plan': return 'bg-slate-100 text-slate-700 border-slate-200';
       case 'Applied': return 'bg-blue-50 text-blue-700 border-blue-100';
-      case 'Interview': return 'bg-purple-50 text-purple-700 border-purple-100';
+      case 'Interview': return 'bg-brand-50 text-brand-700 border-brand-100';
       case 'Offer': return 'bg-green-50 text-green-700 border-green-100';
       case 'Rejected': return 'bg-red-50 text-red-700 border-red-100';
       default: return 'bg-slate-50 text-slate-600';
@@ -3525,6 +3574,7 @@ const NewsChatView: React.FC<{ userProfile?: UserProfile | null }> = ({ userProf
   const [chatLoading, setChatLoading] = useState(false);
   const [conversations, setConversations] = useState<{ id: string, title: string, date: Date }[]>([]);
   const [activeConvId, setActiveConvId] = useState<string>('');
+  const [salaryEstimation, setSalaryEstimation] = useState<SalaryEstimateResult | null>(null);
   const chatEndRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLTextAreaElement>(null);
 
@@ -3541,6 +3591,22 @@ const NewsChatView: React.FC<{ userProfile?: UserProfile | null }> = ({ userProf
     setActiveConvId(Date.now().toString());
     setChatInput('');
   };
+
+  // Automatically estimate salary in background for chat context
+  useEffect(() => {
+    if (userProfile && !salaryEstimation) {
+      const getSalary = async () => {
+        try {
+          const res = await estimateSalaryFromCV(userProfile);
+          setSalaryEstimation(res);
+        } catch (e) {
+          console.error("BG Salary estimation failed", e);
+        }
+      };
+      getSalary();
+    }
+  }, [userProfile]);
+
   const [debugLog, setDebugLog] = useState<string>('');
 
   // --- ADVANCED RAG SYSTEM WITH CHUNKING ---
@@ -3634,12 +3700,25 @@ const NewsChatView: React.FC<{ userProfile?: UserProfile | null }> = ({ userProf
     const now = Date.now();
 
     try {
-      // 1. Fetch jobs — get more data for better coverage
-      const { data: jobs } = await supabase
+      // 1. Fetch relevant jobs
+      setDebugLog('Searching jobs...');
+
+      // Build a smart query: match user keywords OR user's preferred roles
+      let jobQuery = supabase
         .from('jobs')
         .select('title, company, location, description, source, url, posted_at')
-        .order('posted_at', { ascending: false })
-        .limit(30);
+        .order('posted_at', { ascending: false });
+
+      // If user has preferred roles, include them in the broad search
+      const roleKeywords = userProfile?.preferred_roles || [];
+      const searchTerms = [...new Set([...queryTokens, ...roleKeywords])].filter(t => t.length > 2);
+
+      if (searchTerms.length > 0) {
+        const orConditions = searchTerms.map(t => `title.ilike.%${t}%,description.ilike.%${t}%`).join(',');
+        jobQuery = jobQuery.or(orConditions);
+      }
+
+      const { data: jobs } = await jobQuery.limit(60);
 
       if (jobs?.length) {
         setDebugLog(`Chunking ${jobs.length} jobs...`);
@@ -3807,9 +3886,14 @@ Kamu membaca ${ragContext.length} chunk data yang paling relevan dari:
 PROFIL USER:
 ${userProfile?.raw_cv ? `👤 Nama: ${userProfile.full_name || 'Tidak diketahui'}
 🛠 Skills: ${userProfile.skills?.join(', ') || 'Tidak disebutkan'}
-💼 Pengalaman: ${userProfile.experience || 'Tidak disebutkan'}
+💼 Pengalaman: ${userProfile.experience_years} tahun - ${userProfile.experience_summary || 'Tidak disebutkan'}
 🎓 Pendidikan: ${userProfile.education || 'Tidak disebutkan'}
-📄 CV: ${userProfile.raw_cv.slice(0, 2000)}` : '⚠️ User belum upload CV. Sarankan untuk upload di menu Settings agar rekomendasi lebih tepat.'}
+📄 Ringkasan CV: ${userProfile.raw_cv.slice(0, 1000)}` : '⚠️ User belum upload CV. Sarankan untuk upload di menu Settings agar rekomendasi lebih tepat.'}
+
+💰 ESTIMASI GAJI PASAR USER:
+${salaryEstimation ? `Median: Rp ${salaryEstimation.medianSalary.toLocaleString('id-ID')}
+Rentang: Rp ${salaryEstimation.minSalary.toLocaleString('id-ID')} - Rp ${salaryEstimation.maxSalary.toLocaleString('id-ID')}
+Analisis AI: ${salaryEstimation.analysis.map(a => `${a.factor}: ${a.description}`).join('; ')}` : 'Gaji belum dianalisis (Profil belum lengkap).'}
 
 DATA KONTEKS (dari RAG chunking — diurutkan berdasarkan relevansi):
 ${contextText}
@@ -3912,10 +3996,10 @@ CARA MENJAWAB:
   };
 
   const suggestedPrompts = [
-    { icon: '🔍', title: 'Cari Lowongan', desc: 'Tampilkan lowongan software engineer terbaru', color: 'from-blue-500/10 to-indigo-500/10 border-blue-200/50' },
+    { icon: '🔍', title: 'Cari Lowongan', desc: 'Tampilkan lowongan software engineer terbaru', color: 'from-blue-500/10 to-brand-400/10 border-brand-200/50' },
     { icon: '📋', title: 'Info CPNS', desc: 'Kapan pendaftaran CPNS 2026 dibuka?', color: 'from-emerald-500/10 to-teal-500/10 border-emerald-200/50' },
     { icon: '🏢', title: 'BUMN Terbaru', desc: 'Ada rekrutmen BUMN apa saja saat ini?', color: 'from-amber-500/10 to-orange-500/10 border-amber-200/50' },
-    { icon: '💡', title: 'Tips Karir', desc: 'Bagaimana cara lolos tes SKD CPNS?', color: 'from-purple-500/10 to-pink-500/10 border-purple-200/50' },
+    { icon: '💡', title: 'Tips Karir', desc: 'Bagaimana cara lolos tes SKD CPNS?', color: 'from-brand-500/10 to-brand-300/10 border-brand-200/50' },
   ];
 
   // Auto-resize textarea
@@ -3937,7 +4021,7 @@ CARA MENJAWAB:
       {/* Top Bar */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-brand-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+          <div className="w-8 h-8 bg-gradient-to-br from-brand-500 to-brand-300 rounded-xl flex items-center justify-center shadow-md">
             <Sparkles size={16} className="text-white" />
           </div>
           <div>
@@ -3958,7 +4042,7 @@ CARA MENJAWAB:
         {messages.length === 0 ? (
           /* Empty State — Gemini Style */
           <div className="h-full flex flex-col items-center justify-center px-6 py-12">
-            <div className="w-16 h-16 bg-gradient-to-br from-brand-500 to-indigo-600 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-brand-500/20 animate-fade-in">
+            <div className="w-16 h-16 bg-gradient-to-br from-brand-500 to-brand-300 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-brand-500/20 animate-fade-in">
               <Sparkles size={28} className="text-white" />
             </div>
             <h3 className="text-2xl font-black text-slate-900 mb-2 tracking-tight animate-fade-in">Halo, ada yang bisa dibantu?</h3>
@@ -3986,7 +4070,7 @@ CARA MENJAWAB:
                 {/* AI Avatar — Left */}
                 {m.role === 'assistant' && (
                   <div className="shrink-0 mr-3 mt-1">
-                    <div className="w-9 h-9 bg-gradient-to-br from-brand-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-md">
+                    <div className="w-9 h-9 bg-gradient-to-br from-brand-500 to-brand-300 rounded-2xl flex items-center justify-center shadow-md">
                       <Sparkles size={16} className="text-white" />
                     </div>
                   </div>
@@ -4037,7 +4121,7 @@ CARA MENJAWAB:
             {chatLoading && (
               <div className="flex justify-start animate-fade-in">
                 <div className="shrink-0 mr-3 mt-1">
-                  <div className="w-9 h-9 bg-gradient-to-br from-brand-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-md">
+                  <div className="w-9 h-9 bg-gradient-to-br from-brand-500 to-brand-300 rounded-2xl flex items-center justify-center shadow-md">
                     <Sparkles size={16} className="text-white animate-pulse" />
                   </div>
                 </div>
@@ -4152,9 +4236,9 @@ const CPNSBUMNView: React.FC = () => {
 
   const getSourceColor = (author: string) => {
     const colors = [
-      'from-blue-600 to-indigo-600',
+      'from-brand-500 to-brand-300',
       'from-emerald-600 to-teal-600',
-      'from-purple-600 to-violet-600',
+      'from-brand-600 to-brand-400',
       'from-orange-600 to-amber-600',
       'from-rose-600 to-pink-600',
       'from-cyan-600 to-sky-600',
@@ -4320,6 +4404,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
   const [showCVAlert, setShowCVAlert] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(() => loadProfile());
   const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
+  const [toastNotif, setToastNotif] = useState<Notification | null>(null);
 
   React.useEffect(() => {
     // Mandate CV upload for all new users right after onboarding finishes / on start
@@ -4353,6 +4438,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
             unread: true
           };
           setNotifications(prev => [newNotif, ...prev]);
+          setToastNotif(newNotif);
         }
       )
       .subscribe();
@@ -4361,6 +4447,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  React.useEffect(() => {
+    if (toastNotif) {
+      const timer = setTimeout(() => {
+        setToastNotif(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastNotif]);
 
   const unreadCount = notifications.filter(n => n.unread).length;
 
@@ -4467,7 +4562,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
         if (userProfile?.subscriptionPlan !== 'pro') {
           return (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-fade-in bg-slate-50 min-h-full">
-              <div className="w-24 h-24 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-xl shadow-purple-500/30 mb-8 relative">
+              <div className="w-24 h-24 bg-gradient-to-br from-brand-500 to-brand-300 rounded-3xl flex items-center justify-center shadow-xl shadow-brand-500/30 mb-8 relative">
                 <Globe size={40} className="text-white" />
                 <div className="absolute -bottom-2 -right-2 bg-slate-900 w-10 h-10 rounded-xl flex items-center justify-center shadow-lg border-2 border-slate-50">
                   <Lock size={20} className="text-white" />
@@ -4480,7 +4575,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
               <div className="space-y-4 w-full max-w-sm">
                 <button
                   onClick={() => setCurrentView('pricing')}
-                  className="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-lg rounded-2xl shadow-xl shadow-purple-500/25 hover:shadow-purple-500/40 hover:-translate-y-1 transition-all"
+                  className="w-full py-4 bg-gradient-to-r from-brand-700 to-brand-500 text-white font-bold text-lg rounded-2xl shadow-xl shadow-brand-500/25 hover:shadow-brand-500/40 hover:-translate-y-1 transition-all"
                 >
                   Upgrade ke PRO Sekarang
                 </button>
@@ -4495,14 +4590,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
       case 'cv-builder':
         return (
           <div className="p-4 md:p-8">
-            <CVBuilder initialProfile={userProfile} onUpdate={setUserProfile} />
+            <CVBuilder initialProfile={userProfile} onUpdate={setUserProfile} onBack={() => setCurrentView('dashboard')} />
           </div>
         );
       case 'ai-chat':
         if (userProfile?.subscriptionPlan !== 'pro') {
           return (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-fade-in bg-slate-50 min-h-full">
-              <div className="w-24 h-24 bg-gradient-to-br from-brand-500 to-indigo-600 rounded-3xl flex items-center justify-center shadow-xl shadow-indigo-500/30 mb-8 relative">
+              <div className="w-24 h-24 bg-gradient-to-br from-brand-500 to-brand-300 rounded-3xl flex items-center justify-center shadow-xl shadow-brand-500/30 mb-8 relative">
                 <Sparkles size={40} className="text-white" />
                 <div className="absolute -bottom-2 -right-2 bg-slate-900 w-10 h-10 rounded-xl flex items-center justify-center shadow-lg border-2 border-slate-50">
                   <Lock size={20} className="text-white" />
@@ -4515,7 +4610,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
               <div className="space-y-4 w-full max-w-sm">
                 <button
                   onClick={() => setCurrentView('pricing')}
-                  className="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-lg rounded-2xl shadow-xl shadow-purple-500/25 hover:shadow-purple-500/40 hover:-translate-y-1 transition-all"
+                  className="w-full py-4 bg-gradient-to-r from-brand-700 to-brand-500 text-white font-bold text-lg rounded-2xl shadow-xl shadow-brand-500/25 hover:shadow-brand-500/40 hover:-translate-y-1 transition-all"
                 >
                   Buka Semua Fitur PRO
                 </button>
@@ -4528,20 +4623,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
         }
         return <NewsChatView userProfile={userProfile} />;
       case 'salary-checker':
-        return (
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-fade-in bg-slate-50 min-h-full">
-            <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-3xl flex items-center justify-center shadow-xl shadow-teal-500/30 mb-8 relative">
-              <Coins size={40} className="text-white" />
-            </div>
-            <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Salary Checker</h2>
-            <p className="text-lg text-slate-500 max-w-lg mb-8 leading-relaxed">
-              Fitur kalkulator dan pembanding gaji profesi ini sedang dalam tahap pengembangan oleh tim teknis kami. Segera hadir!
-            </p>
-            <button onClick={() => setCurrentView('dashboard')} className="px-8 py-3 bg-slate-900 text-white font-bold rounded-2xl shadow-lg hover:bg-slate-800 transition-all">
-              Kembali ke Dashboard
-            </button>
-          </div>
-        );
+        return <SalaryCheckerView userProfile={userProfile} onNavigate={setCurrentView} />;
       default: return <DashboardHome onViewChange={setCurrentView} unreadCount={unreadCount} />;
     }
   };
@@ -4562,7 +4644,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
         ${sidebarOpen ? 'w-[280px] translate-x-0 opacity-100' : 'w-0 -translate-x-full lg:translate-x-0 opacity-0 lg:opacity-100 pointer-events-none lg:pointer-events-auto overflow-hidden'}
       `}>
         <div className="p-6 flex items-center gap-3">
-          <img src="/logo.png" alt="JobsAgent Logo" className="w-[140px] h-auto object-contain drop-shadow-sm mix-blend-multiply" />
+          <div className="relative group/logo cursor-pointer" onClick={() => handleNavClick('dashboard')}>
+            <div className="absolute -inset-1 bg-gradient-to-tr from-brand-400 to-brand-600 rounded-xl blur opacity-20 group-hover/logo:opacity-50 transition duration-500"></div>
+            <img src="/logo-icon.png" alt="JobsAgent" className="relative w-12 h-12 object-contain rounded-xl transition-transform group-hover/logo:scale-110" />
+          </div>
+          <div className="flex flex-col">
+            <span className="font-black text-xl tracking-tighter text-slate-900 leading-none">
+              Jobs<span className="text-brand-500">A</span>gent
+            </span>
+            <span className="text-[10px] uppercase tracking-[0.2em] font-black text-slate-400 mt-1">AI Career</span>
+          </div>
           <button onClick={() => setSidebarOpen(false)} className="ml-auto text-slate-400 p-2 hover:bg-slate-50 rounded-lg transition-colors border border-transparent hover:border-slate-100">
             <ChevronLeft size={20} className="hidden lg:block" />
             <X size={24} className="block lg:hidden" />
@@ -4596,7 +4687,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
               <NavDropdown
                 icon={<Bot size={20} />}
                 label="Jobs AI Agent"
-                activePath={['cv-builder', 'scanner', 'cover-letter'].includes(currentView)}
+                activePath={['cv-builder', 'scanner', 'cover-letter', 'salary-checker'].includes(currentView)}
               >
                 <NavItem
                   icon={<Wand2 size={18} />}
@@ -4606,6 +4697,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
                 />
                 <NavItem icon={<Zap size={18} />} label="ATS Scanner" active={currentView === 'scanner'} badge="New" onClick={() => handleNavClick('scanner')} />
                 <NavItem icon={<Wand2 size={18} />} label="Cover Letter AI" active={currentView === 'cover-letter'} onClick={() => handleNavClick('cover-letter')} />
+                <NavItem
+                  icon={<Coins size={18} />}
+                  label="Salary Checker"
+                  active={currentView === 'salary-checker'}
+                  onClick={() => handleNavClick('salary-checker')}
+                />
               </NavDropdown>
 
               <NavItem icon={<Globe size={20} />} label="Info CPNS & BUMN" active={currentView === 'cpns-bumn'} onClick={() => handleNavClick('cpns-bumn')} />
@@ -4614,12 +4711,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
                 label="Tanya AI News"
                 active={currentView === 'ai-chat'}
                 onClick={() => handleNavClick('ai-chat')}
-              />
-              <NavItem
-                icon={<Coins size={20} />}
-                label="Salary Checker"
-                active={currentView === 'salary-checker'}
-                onClick={() => handleNavClick('salary-checker')}
               />
               <NavItem icon={<Bell size={20} />} label="Notifikasi" active={currentView === 'notifications'} onClick={() => handleNavClick('notifications')} badge={unreadCount > 0 ? unreadCount.toString() : undefined} />
             </div>
@@ -4665,9 +4756,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
                 <Menu size={20} />
               </button>
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 bg-brand-600 rounded flex items-center justify-center text-white">
-                  <Star size={14} fill="currentColor" />
-                </div>
+                <img src="/logo-icon.png" alt="JobsAgent" className="w-6 h-6 object-contain rounded" />
                 Jobs Agent
               </div>
             </div>
@@ -4687,6 +4776,42 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
           {renderContent()}
         </div>
       </main>
+
+      {/* Floating Toast Notification */}
+      {toastNotif && (
+        <div className="fixed top-24 right-4 md:right-8 z-50 animate-fade-in-up" style={{ animationDuration: '0.4s' }}>
+          <div className="bg-white rounded-2xl p-4 pr-12 shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-slate-100 flex items-start gap-4 max-w-sm relative">
+            {/* Left Accent Bar */}
+            <div className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-2xl bg-gradient-to-b from-brand-500 to-brand-300"></div>
+
+            {/* Close Button */}
+            <button
+              onClick={() => setToastNotif(null)}
+              className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full p-1.5 transition-colors"
+            >
+              <X size={16} />
+            </button>
+
+            {/* Icon */}
+            <div className="w-12 h-12 rounded-xl shrink-0 flex items-center justify-center bg-green-50 text-green-600 border border-green-100 shadow-sm mt-0.5">
+              {toastNotif.type === 'match' ? <Sparkles size={20} /> : toastNotif.type === 'application' ? <Briefcase size={20} /> : <Bell size={20} />}
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              <h4 className="text-[15px] font-bold text-slate-900 mb-1 leading-tight tracking-tight pr-4">
+                {toastNotif.title}
+              </h4>
+              <p className="text-[13px] text-slate-500 font-medium leading-relaxed line-clamp-2">
+                {toastNotif.message}
+              </p>
+              <div className="mt-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                {toastNotif.time}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modern CV Access Alert Modal */}
       {showCVAlert && (

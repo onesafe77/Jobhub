@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Briefcase, MapPin, Target, ArrowRight, Loader2, Rocket, CheckCircle2 } from 'lucide-react';
+import { Sparkles, Briefcase, MapPin, Target, ArrowRight, Loader2, Rocket, CheckCircle2, Coins } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { scraperService } from '../lib/scraperService';
 
@@ -18,7 +18,8 @@ export const OnboardingSurvey: React.FC<OnboardingSurveyProps> = ({ onComplete, 
         selected_jobs: [] as string[],
         selected_locations: [] as string[],
         experience: '0-1 year',
-        goal: 'Mencari pekerjaan baru'
+        goal: 'Mencari pekerjaan baru',
+        salary_expectation: 'Rp 5 Juta - Rp 10 Juta'
     });
 
     const toggleJob = (job: string) => {
@@ -250,6 +251,42 @@ export const OnboardingSurvey: React.FC<OnboardingSurveyProps> = ({ onComplete, 
                     </div>
                 </div>
             )
+        },
+        {
+            id: 4,
+            title: "Berapa ekspektasi gaji bulanan Anda?",
+            subtitle: "Kami akan mencarikan lowongan yang sesuai dengan harapan Anda.",
+            icon: <Coins className="text-emerald-500" size={32} />,
+            content: (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                        'Di bawah Rp 5 Juta',
+                        'Rp 5 Juta - Rp 10 Juta',
+                        'Rp 10 Juta - Rp 15 Juta',
+                        'Rp 15 Juta - Rp 25 Juta',
+                        'Rp 25 Juta - Rp 40 Juta',
+                        'Di atas Rp 40 Juta'
+                    ].map((salary) => (
+                        <button
+                            key={salary}
+                            onClick={() => setFormData({ ...formData, salary_expectation: salary })}
+                            className={`p-5 rounded-2xl border-2 text-left transition-all duration-300 transform active:scale-[0.99] flex items-center justify-between ${formData.salary_expectation === salary
+                                ? 'bg-slate-900 border-slate-900 shadow-lg text-white'
+                                : 'bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50 text-slate-700'
+                                }`}
+                        >
+                            <span className={`font-bold text-base ${formData.salary_expectation === salary ? 'text-white' : 'text-slate-700'}`}>{salary}</span>
+                            {formData.salary_expectation === salary ? (
+                                <div className="w-6 h-6 rounded-full bg-brand-500 flex items-center justify-center text-white shrink-0 ml-3">
+                                    <CheckCircle2 size={16} />
+                                </div>
+                            ) : (
+                                <div className="w-6 h-6 rounded-full border-2 border-slate-200 shrink-0 ml-3"></div>
+                            )}
+                        </button>
+                    ))}
+                </div>
+            )
         }
     ];
 
@@ -267,13 +304,16 @@ export const OnboardingSurvey: React.FC<OnboardingSurveyProps> = ({ onComplete, 
             <div className="max-w-2xl w-full relative z-10 my-8">
                 {/* Header branding */}
                 <div className="flex items-center justify-center gap-3 mb-10 animate-fade-in-up">
-                    <img src="/logo.png" alt="JobsAgent Logo" className="w-[160px] h-auto object-contain drop-shadow-md mix-blend-multiply" />
+                    <img src="/logo-icon.png" alt="JobsAgent" className="w-12 h-12 object-contain rounded-xl" />
+                    <span className="font-extrabold text-[24px] tracking-tight">
+                        <span style={{ color: '#0B1F3F' }}>Jobs</span><span style={{ color: '#00B4D8' }}>A</span><span style={{ color: '#0B1F3F' }}>gen</span><span style={{ color: '#00B4D8' }}>t</span>
+                    </span>
                 </div>
 
                 {/* Progress Indicators */}
                 <div className="mb-10 flex justify-center items-center px-4 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
                     <div className="flex items-center gap-3 bg-white py-3 px-6 rounded-full shadow-sm border border-slate-100">
-                        {[1, 2, 3].map((s) => (
+                        {[1, 2, 3, 4].map((s) => (
                             <React.Fragment key={s}>
                                 <div
                                     className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm transition-all duration-500 ${s === step ? 'bg-slate-900 text-white shadow-md scale-110' : (s < step ? 'bg-brand-100 text-brand-600' : 'bg-slate-100 text-slate-400')
@@ -281,7 +321,7 @@ export const OnboardingSurvey: React.FC<OnboardingSurveyProps> = ({ onComplete, 
                                 >
                                     {s < step ? <CheckCircle2 size={16} /> : s}
                                 </div>
-                                {s < 3 && (
+                                {s < 4 && (
                                     <div className={`w-8 h-[2px] rounded-full transition-all duration-500 ${s < step ? 'bg-brand-500' : 'bg-slate-200'}`} />
                                 )}
                             </React.Fragment>
@@ -317,7 +357,7 @@ export const OnboardingSurvey: React.FC<OnboardingSurveyProps> = ({ onComplete, 
                             </button>
                         ) : <div />}
 
-                        {step < 3 ? (
+                        {step < 4 ? (
                             <button
                                 onClick={handleNext}
                                 disabled={step === 1 && formData.selected_jobs.length === 0}

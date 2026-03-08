@@ -3,16 +3,17 @@ import {
     FileText, Sparkles, Download, Plus, Trash2,
     User, Briefcase, GraduationCap, Star,
     ChevronRight, Save, Loader2, CheckCircle2,
-    Layout, Wand2, MapPin, Mail, Phone, Camera, X
+    Layout, Wand2, MapPin, Mail, Phone, Camera, X, ArrowLeft
 } from 'lucide-react';
 import { UserProfile, optimizeCVSection, saveProfile } from '../lib/openai';
 
 interface CVBuilderProps {
     initialProfile: UserProfile | null;
     onUpdate: (profile: UserProfile) => void;
+    onBack?: () => void;
 }
 
-export const CVBuilder: React.FC<CVBuilderProps> = ({ initialProfile, onUpdate }) => {
+export const CVBuilder: React.FC<CVBuilderProps> = ({ initialProfile, onUpdate, onBack }) => {
     const defaultProfile: UserProfile = {
         name: '',
         email: '',
@@ -782,16 +783,27 @@ export const CVBuilder: React.FC<CVBuilderProps> = ({ initialProfile, onUpdate }
                 {/* EDIT SIDE */}
                 <div className="flex-1 space-y-6">
                     <div className="flex items-center justify-between mb-2">
-                        <div>
-                            <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                                <div className="p-2 bg-brand-500 rounded-xl text-white shadow-lg shadow-brand-200">
-                                    <Wand2 size={24} />
-                                </div>
-                                AI CV ATS Builder
-                            </h1>
-                            <p className="text-slate-500 text-sm font-medium mt-1">
-                                Lengkapi data di bawah ini dan biarkan AI mengoptimasi setiap bagian CV Anda.
-                            </p>
+                        <div className="flex items-center gap-4">
+                            {onBack && (
+                                <button
+                                    onClick={onBack}
+                                    className="p-2 hover:bg-slate-100 rounded-xl transition-all active:scale-90 text-slate-500"
+                                    title="Kembali"
+                                >
+                                    <ArrowLeft size={24} />
+                                </button>
+                            )}
+                            <div>
+                                <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                                    <div className="p-2 bg-brand-500 rounded-xl text-white shadow-lg shadow-brand-200">
+                                        <Wand2 size={24} />
+                                    </div>
+                                    AI CV ATS Builder
+                                </h1>
+                                <p className="text-slate-500 text-sm font-medium mt-1">
+                                    Lengkapi data di bawah ini dan biarkan AI mengoptimasi setiap bagian CV Anda.
+                                </p>
+                            </div>
                         </div>
 
                         {/* TEMPLATE PICKER */}

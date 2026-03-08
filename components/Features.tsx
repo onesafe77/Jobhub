@@ -66,7 +66,7 @@ export const Features: React.FC = () => {
                       <span>75%</span>
                     </div>
                     <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-indigo-500 w-[75%] rounded-full"></div>
+                      <div className="h-full bg-brand-400 w-[75%] rounded-full"></div>
                     </div>
                   </div>
                 </div>
@@ -85,7 +85,7 @@ export const Features: React.FC = () => {
             <div className="bg-white rounded-[32px] border border-slate-200 p-8 lg:p-10 relative overflow-hidden group hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-1 h-full min-h-[300px]">
               <div className="flex flex-col lg:flex-row gap-8 items-start">
                 <div className="flex-1 z-10">
-                  <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center text-purple-600 mb-6 shadow-sm">
+                  <div className="w-12 h-12 bg-brand-100 rounded-2xl flex items-center justify-center text-brand-600 mb-6 shadow-sm">
                     <Search size={24} strokeWidth={2.5} />
                   </div>
                   <h3 className="text-2xl font-bold text-slate-900 mb-3">Search 10+ Platform Sekaligus</h3>
@@ -113,7 +113,7 @@ export const Features: React.FC = () => {
                     </div>
                   </div>
                   {/* Decorative blobs */}
-                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-purple-100/50 rounded-full blur-3xl"></div>
+                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-brand-100/50 rounded-full blur-3xl"></div>
                 </div>
               </div>
             </div>
@@ -174,16 +174,16 @@ export const Features: React.FC = () => {
           </div>
 
           {/* CARD 5: AI Cover Letter (Full Width) */}
-          <div className="lg:col-span-12 bg-gradient-to-r from-purple-50 to-pink-50 rounded-[32px] border border-slate-200 p-8 lg:p-12 relative overflow-hidden group hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-1 flex flex-col lg:flex-row items-center gap-10">
+          <div className="lg:col-span-12 bg-gradient-to-r from-brand-50 to-brand-100 rounded-[32px] border border-slate-200 p-8 lg:p-12 relative overflow-hidden group hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-1 flex flex-col lg:flex-row items-center gap-10">
             <div className="lg:w-1/2 z-10">
-              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-purple-600 mb-6 shadow-sm">
+              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-brand-600 mb-6 shadow-sm">
                 <Bot size={32} strokeWidth={2} />
               </div>
               <h3 className="text-3xl font-bold text-slate-900 mb-4">AI Cover Letter Generator</h3>
               <p className="text-lg text-slate-600 leading-relaxed max-w-lg mb-8">
                 Ga perlu bingung nulis kata-kata. AI Jobs Agent membuat cover letter profesional dalam 60 detik, yang disesuaikan secara spesifik dengan job description dan pengalamanmu.
               </p>
-              <button className="flex items-center gap-2 font-semibold text-purple-700 bg-white px-6 py-3 rounded-xl border border-purple-100 shadow-sm hover:bg-purple-50 transition-colors">
+              <button className="flex items-center gap-2 font-semibold text-brand-700 bg-white px-6 py-3 rounded-xl border border-brand-100 shadow-sm hover:bg-brand-50 transition-colors">
                 Coba Generator <ArrowRight size={18} />
               </button>
             </div>
@@ -207,13 +207,13 @@ export const Features: React.FC = () => {
                 <div className="absolute -top-4 -right-4 bg-yellow-100 p-2 rounded-lg shadow-sm border border-yellow-200 animate-bounce">
                   <Bot size={20} className="text-yellow-600" />
                 </div>
-                <div className="absolute -bottom-2 -left-2 bg-purple-100 p-2 rounded-full shadow-sm border border-purple-200">
-                  <div className="text-[10px] font-bold text-purple-600">AI Generated</div>
+                <div className="absolute -bottom-2 -left-2 bg-brand-100 p-2 rounded-full shadow-sm border border-brand-200">
+                  <div className="text-[10px] font-bold text-brand-600">AI Generated</div>
                 </div>
               </div>
 
               {/* Background Glow */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-purple-200/40 rounded-full blur-[60px] pointer-events-none"></div>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-brand-200/40 rounded-full blur-[60px] pointer-events-none"></div>
             </div>
           </div>
 

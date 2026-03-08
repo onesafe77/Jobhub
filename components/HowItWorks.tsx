@@ -58,10 +58,10 @@ export const HowItWorks: React.FC = () => {
 
           {/* Card 2 - Save */}
           <div className="group bg-white rounded-[24px] border border-slate-200 p-8 lg:p-10 hover:-translate-y-2 transition-all duration-300 shadow-[0_12px_48px_rgba(0,0,0,0.04)] hover:shadow-[0_24px_60px_rgba(0,0,0,0.08)] relative overflow-hidden flex flex-col">
-             <div className="absolute top-2 right-6 text-[120px] font-bold text-purple-50/80 leading-none select-none -z-10 group-hover:text-purple-100/80 transition-colors font-sans">02</div>
+             <div className="absolute top-2 right-6 text-[120px] font-bold text-brand-50/80 leading-none select-none -z-10 group-hover:text-brand-100/80 transition-colors font-sans">02</div>
              
-             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-50 to-purple-100 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-300 shadow-inner">
-               <Save className="text-purple-600 w-8 h-8" strokeWidth={2.5} />
+             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-brand-50 to-brand-100 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-300 shadow-inner">
+               <Save className="text-brand-600 w-8 h-8" strokeWidth={2.5} />
              </div>
 
              <h3 className="text-2xl font-bold text-slate-900 mb-4">Save ke Notion</h3>
@@ -72,7 +72,7 @@ export const HowItWorks: React.FC = () => {
              {/* Mini Mockup */}
              <div className="mt-auto bg-slate-50 rounded-xl border border-slate-100 p-4 flex gap-2 transform group-hover:translate-y-[-4px] transition-transform duration-500">
                <div className="flex-1 bg-white rounded-lg border border-slate-200 p-2 shadow-sm flex flex-col gap-2">
-                  <div className="w-full h-1.5 bg-purple-200 rounded-full"></div>
+                  <div className="w-full h-1.5 bg-brand-200 rounded-full"></div>
                   <div className="w-full h-8 bg-slate-50 rounded border border-slate-100"></div>
                   <div className="w-full h-8 bg-slate-50 rounded border border-slate-100"></div>
                </div>

@@ -47,20 +47,24 @@ export const Login: React.FC<LoginProps> = ({ onSignUpClick, onLoginComplete, on
             {/* Elegant glowing orbs */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
                <div className="absolute top-[-15%] right-[-10%] w-[70%] h-[70%] bg-brand-600/20 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-10000"></div>
-               <div className="absolute bottom-[-10%] left-[-20%] w-[60%] h-[60%] bg-indigo-600/20 rounded-full blur-[100px] mix-blend-screen"></div>
-               <div className="absolute top-[40%] left-[20%] w-[40%] h-[40%] bg-purple-500/10 rounded-full blur-[80px] mix-blend-screen"></div>
+               <div className="absolute bottom-[-10%] left-[-20%] w-[60%] h-[60%] bg-brand-500/20 rounded-full blur-[100px] mix-blend-screen"></div>
+               <div className="absolute top-[40%] left-[20%] w-[40%] h-[40%] bg-brand-400/10 rounded-full blur-[80px] mix-blend-screen"></div>
             </div>
 
             <div className="relative z-10 animate-fade-in-up">
                <div className="flex items-center gap-3 mb-16">
-                  <div className="bg-white p-3 rounded-2xl shadow-xl shadow-brand-500/10 inline-flex">
-                     <img src="/logo.png" alt="JobsAgent Logo" className="w-[140px] h-auto object-contain" />
+                  <img src="/logo-icon.png" alt="JobsAgent" className="w-14 h-14 object-contain rounded-2xl shadow-lg" />
+                  <div className="flex flex-col">
+                     <span className="font-extrabold text-[24px] tracking-tight leading-tight">
+                        <span className="text-white">Jobs</span><span style={{ color: '#00B4D8' }}>A</span><span className="text-white">gen</span><span style={{ color: '#00B4D8' }}>t</span>
+                     </span>
+                     <span className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">AI-Powered Career Network</span>
                   </div>
                </div>
 
                <h1 className="text-5xl xl:text-6xl font-extrabold mb-8 leading-[1.1] tracking-tight">
                   Welcome <br /> Back, <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-indigo-400">Future Leader.</span>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-brand-200">Future Leader.</span>
                </h1>
                <p className="text-xl text-slate-400 max-w-md leading-relaxed mb-12 font-medium">
                   Lanjutkan langkahmu menuju karir impian. Data, insight, dan lowongan eksklusif menantimu.
@@ -70,7 +74,7 @@ export const Login: React.FC<LoginProps> = ({ onSignUpClick, onLoginComplete, on
             {/* Glassmorphism Testimonial */}
             <div className="relative z-10 mt-auto animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-3xl p-8 max-w-lg shadow-[0_8px_32px_rgba(0,0,0,0.2)] relative overflow-hidden group hover:bg-white/[0.05] transition-all duration-500">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-500 to-indigo-500 opacity-50"></div>
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-500 to-brand-300 opacity-50"></div>
                   <div className="flex items-center gap-1.5 text-brand-400 mb-5">
                      {[1, 2, 3, 4, 5].map(i => <span key={i} className="text-lg">★</span>)}
                   </div>
@@ -103,7 +107,7 @@ export const Login: React.FC<LoginProps> = ({ onSignUpClick, onLoginComplete, on
          <div className="w-full lg:w-[55%] flex items-center justify-center p-6 sm:p-12 lg:p-24 relative overflow-hidden bg-white">
             <button
                onClick={onBackToLanding}
-               className="absolute top-8 left-8 text-slate-400 hover:text-slate-900 flex items-center gap-2 font-bold text-sm lg:hidden transition-colors bg-slate-100 hover:bg-slate-200 py-2 px-4 rounded-full"
+               className="absolute top-8 left-8 text-slate-400 hover:text-slate-900 flex items-center gap-2 font-bold text-sm transition-colors bg-slate-100 hover:bg-slate-200 py-2 px-4 rounded-full z-20"
             >
                <ArrowLeft size={16} /> Kembali
             </button>
@@ -113,7 +117,10 @@ export const Login: React.FC<LoginProps> = ({ onSignUpClick, onLoginComplete, on
 
             <div className="w-full max-w-[420px] relative z-10 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
                <div className="lg:hidden flex items-center gap-3 mb-12 justify-center">
-                  <img src="/logo.png" alt="JobsAgent Logo" className="w-[140px] h-auto object-contain mix-blend-multiply" />
+                  <img src="/logo-icon.png" alt="JobsAgent" className="w-12 h-12 object-contain rounded-xl" />
+                  <span className="font-extrabold text-[22px] tracking-tight">
+                     <span style={{ color: '#0B1F3F' }}>Jobs</span><span style={{ color: '#00B4D8' }}>A</span><span style={{ color: '#0B1F3F' }}>gen</span><span style={{ color: '#00B4D8' }}>t</span>
+                  </span>
                </div>
 
                <div className="mb-10 text-center lg:text-left">

@@ -135,7 +135,7 @@ export const Platforms: React.FC = () => {
                 <div className="p-3 bg-slate-50 rounded-xl group-hover:scale-110 transition-transform duration-300">
                   <OpenAIIcon />
                 </div>
-                <span className="bg-purple-50 text-purple-700 border border-purple-100 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
+                <span className="bg-brand-50 text-brand-700 border border-brand-100 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
                   AI
                 </span>
               </div>

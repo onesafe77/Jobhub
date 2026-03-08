@@ -28,8 +28,11 @@ export const DashboardMockup: React.FC = () => {
         <div className="flex h-full">
           {/* Sidebar */}
           <div className="w-16 sm:w-48 bg-slate-50 border-r border-slate-100 flex flex-col py-4 gap-1">
-            <div className="px-4 mb-4 flex items-center justify-center">
-              <img src="/logo.png" alt="JobsAgent" className="w-[100px] h-auto object-contain mix-blend-multiply" />
+            <div className="px-4 mb-4 flex items-center gap-1.5">
+              <img src="/logo-icon.png" alt="JobsAgent" className="w-7 h-7 object-contain rounded-md" />
+              <span className="hidden sm:inline font-extrabold text-[14px] tracking-tight">
+                <span style={{ color: '#0B1F3F' }}>Jobs</span><span style={{ color: '#00B4D8' }}>A</span><span style={{ color: '#0B1F3F' }}>gen</span><span style={{ color: '#00B4D8' }}>t</span>
+              </span>
             </div>
             {['Dashboard', 'Pekerjaan', 'Aplikasi', 'Interview'].map((item, idx) => (
               <div key={item} className={`mx-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-3 cursor-pointer ${idx === 1 ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}>

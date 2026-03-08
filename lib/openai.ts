@@ -514,3 +514,90 @@ Your task is to rephrase the following ${sectionType} to be more professional, i
     const data = await response.json();
     return data.choices[0].message.content.trim();
 }
+
+/**
+ * Result structure for Salary Checker
+ */
+export interface SalaryEstimateResult {
+    minSalary: number;
+    maxSalary: number;
+    medianSalary: number;
+    confidenceScore: number;
+    analysis: {
+        factor: string;
+        impact: 'positive' | 'negative' | 'neutral';
+        description: string;
+    }[];
+}
+
+/**
+ * Estimate Market Salary based on CV Profile.
+ */
+export async function estimateSalaryFromCV(profile: UserProfile): Promise<SalaryEstimateResult> {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+            model: 'gpt-4o', // Using gpt-4o for better market reasoning
+            temperature: 0.2,
+            response_format: { type: 'json_object' },
+            messages: [
+                {
+                    role: 'system',
+                    content: `You are an expert tech recruiter and compensation analyst in Indonesia. 
+Your task is to estimate a realistic market salary range (in Indonesian Rupiah / IDR per month) for a candidate based strictly on their CV profile.
+Factor in their experience years, skills, education, and preferred roles.
+
+Return a JSON object exactly like this:
+{
+  "minSalary": 8000000,
+  "maxSalary": 15000000,
+  "medianSalary": 11500000,
+  "confidenceScore": 85,
+  "analysis": [
+    {
+      "factor": "Pengalaman 3 Tahun",
+      "impact": "positive",
+      "description": "Pengalaman yang cukup matang di bidang ini menaikkan nilai tawar."
+    },
+    {
+      "factor": "Skill React & Node.js",
+      "impact": "positive",
+      "description": "Permintaan tinggi untuk fullstack developer di pasar saat ini."
+    }
+  ]
+}
+
+Provide 3-5 analysis factors in Bahasa Indonesia explaining your reasoning. Ensure salaries are realistic for the current Indonesian job market.`
+                },
+                {
+                    role: 'user',
+                    content: `Please estimate the salary for this candidate profile:
+Skills: ${profile.skills.join(', ')}
+Experience: ${profile.experience_years} years - ${profile.experience_summary}
+Education: ${profile.education}
+Certifications: ${profile.certifications.join(', ')}
+Preferred Roles: ${profile.preferred_roles.join(', ')}`
+                }
+            ]
+        }),
+    });
+
+    if (!response.ok) {
+        throw new Error(`OpenAI API error during salary estimation: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const result = JSON.parse(data.choices[0].message.content);
+
+    return {
+        minSalary: result.minSalary || 0,
+        maxSalary: result.maxSalary || 0,
+        medianSalary: result.medianSalary || 0,
+        confidenceScore: result.confidenceScore || 0,
+        analysis: result.analysis || [],
+    };
+}

@@ -29,8 +29,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onLoginClick, onSignUpClick }) =
         `}
       >
         {/* Logo */}
-        <div className="flex items-center gap-2 cursor-pointer group">
-          <img src="/logo.png" alt="JobsAgent Logo" className="w-10 h-10 object-contain drop-shadow-md group-hover:scale-105 transition-transform mix-blend-multiply" />
+        <div className="flex items-center gap-2.5 cursor-pointer group">
+          <div className="relative">
+            <div className="absolute -inset-1 bg-gradient-to-tr from-brand-400 to-brand-600 rounded-xl blur opacity-20 group-hover:opacity-50 transition duration-500"></div>
+            <img src="/logo-icon.png" alt="JobsAgent" className="relative w-11 h-11 object-contain rounded-xl transition-transform group-hover:scale-110" />
+          </div>
+          <span className="font-black text-[22px] tracking-tighter text-slate-900 leading-none">
+            Jobs<span className="text-brand-500">A</span>gent
+          </span>
         </div>
 
         {/* Menu - Hidden on mobile */}
@@ -57,7 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onLoginClick, onSignUpClick }) =
           </button>
           <button
             onClick={onSignUpClick}
-            className="px-5 py-2.5 rounded-full bg-gradient-to-r from-brand-600 to-indigo-600 text-white text-sm font-semibold shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:translate-y-[-1px] transition-all active:scale-95"
+            className="px-5 py-2.5 rounded-full bg-gradient-to-r from-brand-600 to-brand-400 text-white text-sm font-semibold shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:translate-y-[-1px] transition-all active:scale-95"
           >
             Daftar Gratis
           </button>
