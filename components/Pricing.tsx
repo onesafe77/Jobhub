@@ -23,7 +23,7 @@ export const Pricing: React.FC<{ onSelectPlan?: (plan: 'free' | 'lite' | 'pro') 
 
         setLoading(plan);
         const profile = loadProfile();
-        const orderId = `JOBHUB-${Date.now()}`;
+        const orderId = `JA-${Date.now()}`;
 
         try {
             // 1. Load Snap Script
