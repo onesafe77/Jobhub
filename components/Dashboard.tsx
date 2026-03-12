@@ -6,7 +6,7 @@ import {
   Star, X, CheckCircle2, ArrowLeft, ArrowRight, ExternalLink, Share2, AlertCircle, Check, Target,
   MoreHorizontal, ChevronLeft, Clock, Download, AlertTriangle, Lightbulb,
   Plus, Minus, ChevronDown, ChevronUp, Wand2, ListFilter, Menu, Upload, User, Mail, Phone, Lock, Globe, BellRing,
-  Building2, Users, Trophy, MessageSquare, PieChart, Activity, Eye, Loader2, Copy, Newspaper, Bot, Send, BellOff, Trash2
+  Building2, Users, Trophy, MessageSquare, PieChart, Activity, Eye, Loader2, Copy, Newspaper, Bot, Send, BellOff, Trash2, CreditCard
 } from 'lucide-react';
 import { scraperService, InstagramPost } from "../lib/scraperService";
 import { supabase } from "../lib/supabase";
@@ -16,8 +16,10 @@ import { Pricing } from './Pricing';
 import { CVUpload } from './CVUpload';
 import { projectTasksService, ProjectTask, NewProjectTask } from "../lib/projectTasks";
 import { SalaryCheckerView } from './SalaryCheckerView';
+import { BillingView } from './BillingView';
 import { favoriteJobsService, FavoriteJob, NewFavoriteJob } from "../lib/favoriteJobs";
 import { extractTextFromPDF } from '../lib/pdfParser';
+import { ProjectTableView } from './ProjectTableView';
 
 const exportToWord = (content: string, filename: string) => {
   const preHtml = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Export HTML To Doc</title></head><body style='font-family: Arial, sans-serif;'>";
@@ -251,7 +253,7 @@ interface Notification {
   unread: boolean;
 }
 
-type DashboardView = 'dashboard' | 'search' | 'detail' | 'applications' | 'scanner' | 'settings' | 'notifications' | 'cv' | 'project-tracker' | 'cover-letter' | 'cpns-bumn' | 'ai-chat' | 'cv-builder' | 'pricing' | 'salary-checker';
+type DashboardView = 'dashboard' | 'search' | 'detail' | 'applications' | 'scanner' | 'settings' | 'notifications' | 'cv' | 'project-tracker' | 'cover-letter' | 'cpns-bumn' | 'ai-chat' | 'cv-builder' | 'pricing' | 'salary-checker' | 'billing';
 
 // --- MOCK DATA ---
 const MOCK_JOBS: Job[] = [
@@ -327,7 +329,7 @@ const MOCK_JOBS: Job[] = [
     company: "Shopee",
     logo: "S",
     logoColor: "bg-orange-500",
-    source: "Glints",
+    source: "LinkedIn",
     matchScore: 85,
     location: "Jakarta",
     type: "Full-time",
@@ -974,6 +976,20 @@ const JobSearch: React.FC<{
   const [isScraping, setIsScraping] = useState(false);
   const [sortBy, setSortBy] = useState<'terbaru' | 'rekomendasi'>('terbaru');
   const [activeFilters, setActiveFilters] = useState<{ keyword: string, location: string }>({ keyword: '', location: '' });
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['LinkedIn', 'JobStreet']);
+
+  const availablePlatforms = [
+    { id: 'LinkedIn', label: 'LinkedIn', icon: '💼', color: 'bg-blue-600' },
+    { id: 'JobStreet', label: 'JobStreet', icon: '🏢', color: 'bg-indigo-600' }
+  ];
+
+  const handlePlatformToggle = (platformId: string) => {
+    setSelectedPlatforms(prev =>
+      prev.includes(platformId)
+        ? prev.filter(id => id !== platformId)
+        : [...prev, platformId]
+    );
+  };
 
   const popularSearches = ["Software Engineer", "Data Analyst", "Safety Officer", "Marketing", "Accountant", "UI/UX Designer"];
   const popularLocations = ["Jakarta", "Bandung", "Surabaya", "Indonesia", "Remote"];
@@ -1275,8 +1291,28 @@ const JobSearch: React.FC<{
               </button>
             </div>
 
+            {/* Platform Toggles - Compact View */}
             {(activeFilters.keyword || activeFilters.location) && viewState === 'results' && (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 mt-1 mb-2">
+                <div className="flex items-center gap-2 mr-4 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Cari di:</span>
+                  <div className="flex gap-1.5">
+                    {availablePlatforms.map(platform => (
+                      <button
+                        key={platform.id}
+                        onClick={() => handlePlatformToggle(platform.id)}
+                        className={`text-[11px] font-bold px-2.5 py-1 rounded-md transition-all flex items-center gap-1 ${selectedPlatforms.includes(platform.id)
+                          ? `${platform.color} text-white shadow-sm`
+                          : 'bg-white text-slate-500 hover:bg-slate-100/50 border border-slate-200'
+                          }`}
+                      >
+                        {platform.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Active Keyword/Location Filters */}
                 {activeFilters.keyword && (
                   <div
                     onClick={() => removeFilter('keyword')}
@@ -1478,9 +1514,30 @@ const JobSearch: React.FC<{
               <h2 className="text-[32px] sm:text-5xl md:text-6xl font-[900] text-slate-900 mb-6 text-center tracking-tight leading-[1.1] animate-fade-in-up">
                 Temukan karir impian<br /><span className="text-brand-600">dalam hitungan detik.</span>
               </h2>
-              <p className="text-base sm:text-lg text-slate-500 text-center mb-12 max-w-[500px] leading-relaxed animate-fade-in-up delay-100 font-medium">
+              <p className="text-base sm:text-lg text-slate-500 text-center mb-10 max-w-[500px] leading-relaxed animate-fade-in-up delay-100 font-medium">
                 Ketik posisi atau keahlian Anda, biar Job Agent yang mencarikan lowongan paling cocok.
               </p>
+
+              {/* Platform Selector (Empty State) */}
+              <div className="mb-6 flex items-center gap-3 animate-fade-in-up delay-150">
+                <span className="text-sm font-bold text-slate-500">Pilih Platform:</span>
+                <div className="flex flex-wrap gap-2">
+                  {availablePlatforms.map(platform => (
+                    <button
+                      key={platform.id}
+                      onClick={() => handlePlatformToggle(platform.id)}
+                      className={`px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center gap-2 border ${selectedPlatforms.includes(platform.id)
+                        ? `${platform.color} text-white border-transparent shadow-md scale-105 transform`
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                        }`}
+                    >
+                      <span>{platform.icon}</span>
+                      {platform.label}
+                      {selectedPlatforms.includes(platform.id) && <div className="w-1.5 h-1.5 bg-white rounded-full ml-1 blur-[1px]"></div>}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               {/* CHATGPT STYLE GIANT SEARCH BAR */}
               <div className="w-full max-w-[760px] bg-white rounded-[32px] p-2.5 sm:p-3 shadow-[0_40px_80px_-20px_rgba(15,23,42,0.15)] border border-slate-200/50 focus-within:border-brand-500 focus-within:ring-[10px] focus-within:ring-brand-500/5 transition-all duration-500 relative z-30 flex flex-col sm:flex-row mb-16 animate-fade-in-up delay-200 group">
@@ -3217,18 +3274,27 @@ const SettingsView: React.FC<{ user?: { full_name?: string; email?: string }; un
 
 // --- MAIN DASHBOARD EXPORT ---
 
-const ProjectTracker: React.FC<{ unreadCount?: number }> = ({ unreadCount = 0 }) => {
+const ProjectTracker: React.FC<{ unreadCount?: number; userProfile?: UserProfile | null }> = ({ unreadCount = 0, userProfile }) => {
   const [projects, setProjects] = useState<ProjectTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddingTask, setIsAddingTask] = useState<ProjectTask['status'] | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskCompany, setNewTaskCompany] = useState('');
+  const [viewType, setViewType] = useState<'kanban' | 'table'>('kanban');
 
   const columns: ProjectTask['status'][] = ['Plan', 'Applied', 'Interview', 'Offer', 'Rejected'];
 
   React.useEffect(() => {
     fetchTasks();
-  }, []);
+    if (userProfile?.preferred_tracking_view) {
+      setViewType(userProfile.preferred_tracking_view);
+    } else {
+      const profile = loadProfile();
+      if (profile?.preferred_tracking_view) {
+        setViewType(profile.preferred_tracking_view);
+      }
+    }
+  }, [userProfile]);
 
   const fetchTasks = async () => {
     try {
@@ -3308,12 +3374,33 @@ const ProjectTracker: React.FC<{ unreadCount?: number }> = ({ unreadCount = 0 })
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight mb-1">My Notebook</h1>
           <p className="text-slate-500 text-sm">Notion-style board to track your job applications, powered by Supabase.</p>
         </div>
+        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+          <button
+            onClick={() => setViewType('kanban')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${viewType === 'kanban' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            <LayoutDashboard size={14} /> Kanban
+          </button>
+          <button
+            onClick={() => setViewType('table')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${viewType === 'table' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            <ListFilter size={14} /> Tabel
+          </button>
+        </div>
       </div>
 
       {loading ? (
         <div className="flex justify-center items-center h-64">
           <Loader2 className="animate-spin text-brand-500 w-8 h-8" />
         </div>
+      ) : viewType === 'table' ? (
+        <ProjectTableView
+          projects={projects}
+          onStatusChange={handleStatusChange}
+          onDelete={handleDeleteTask}
+          onRefresh={fetchTasks}
+        />
       ) : (
         <div className="flex overflow-x-auto pb-8 gap-6 snap-x custom-scrollbar">
           {columns.map(col => (
@@ -4407,6 +4494,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
   const [toastNotif, setToastNotif] = useState<Notification | null>(null);
 
   React.useEffect(() => {
+    // Sync profile from prop if exists (passed from App.tsx session)
+    if (user?.job_preferences) {
+      const preferences = user.job_preferences;
+      const currentProfile = loadProfile();
+
+      // If profile is missing or different, update it
+      // Added explicit check for preferred_tracking_view
+      const needsUpdate = !currentProfile ||
+        JSON.stringify(currentProfile.preferred_roles) !== JSON.stringify(preferences.selected_jobs) ||
+        currentProfile.preferred_tracking_view !== preferences.preferred_tracking_view;
+
+      if (needsUpdate) {
+        const newProfile: UserProfile = {
+          ...currentProfile,
+          ...preferences,
+          preferred_roles: preferences.selected_jobs || [],
+          raw_cv: preferences.raw_cv || currentProfile?.raw_cv || ''
+        };
+        setUserProfile(newProfile);
+        saveProfile(newProfile);
+      }
+    }
+  }, [user]);
+
+  React.useEffect(() => {
     // Mandate CV upload for all new users right after onboarding finishes / on start
     if (!userProfile?.raw_cv && currentView !== 'settings' && currentView !== 'cv-builder') {
       setCurrentView('settings');
@@ -4543,7 +4655,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
         return <SettingsView user={user} unreadCount={unreadCount} userProfile={userProfile} onProfileUpdate={(p) => setUserProfile(p)} onViewChange={setCurrentView} />;
       case 'notifications': return <NotificationsView notifications={notifications} onMarkRead={handleMarkNotificationsRead} onViewChange={setCurrentView} />;
       case 'settings': return <SettingsView user={user} unreadCount={unreadCount} userProfile={userProfile} onProfileUpdate={(p) => setUserProfile(p)} onViewChange={setCurrentView} />;
-      case 'project-tracker': return <ProjectTracker unreadCount={unreadCount} />;
+      case 'project-tracker': return <ProjectTracker unreadCount={unreadCount} userProfile={userProfile} />;
       case 'cover-letter': return <CoverLetterView userProfile={userProfile} unreadCount={unreadCount} />;
       case 'pricing':
         return (
@@ -4624,6 +4736,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
         return <NewsChatView userProfile={userProfile} />;
       case 'salary-checker':
         return <SalaryCheckerView userProfile={userProfile} onNavigate={setCurrentView} />;
+      case 'billing':
+        return <BillingView userProfile={userProfile} onNavigate={setCurrentView} />;
       default: return <DashboardHome onViewChange={setCurrentView} unreadCount={unreadCount} />;
     }
   };
@@ -4731,6 +4845,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
             </div>
             <Settings size={18} className="text-slate-400" />
           </div>
+          <button
+            onClick={() => setCurrentView('billing')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all mb-2 ${currentView === 'billing' ? 'bg-brand-50 text-brand-600 shadow-sm border border-brand-100' : 'text-slate-600 hover:bg-slate-50'}`}
+          >
+            <CreditCard size={18} className={currentView === 'billing' ? 'text-brand-600' : 'text-slate-400'} />
+            <span className="text-sm font-bold">Billing & Langganan</span>
+          </button>
           <button
             onClick={onLogout}
             className="w-full flex items-center justify-center gap-2 text-red-600 text-sm font-bold py-3 hover:bg-red-50 rounded-xl transition-colors"

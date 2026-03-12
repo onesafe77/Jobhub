@@ -4,17 +4,17 @@ import { Hero } from './components/Hero';
 import { Features } from './components/Features';
 import { HowItWorks } from './components/HowItWorks';
 import { Pricing } from './components/Pricing';
-import { Platforms } from './components/Platforms';
 import { Testimonials } from './components/Testimonials';
 import { Footer } from './components/Footer';
 import { Dashboard } from './components/Dashboard';
 import { SignUp } from './components/SignUp';
 import { Login } from './components/Login';
 import { OnboardingSurvey } from './components/OnboardingSurvey';
+import { AdminDashboard } from './components/AdminDashboard';
 import { supabase } from './lib/supabase';
 import { Session } from '@supabase/supabase-js';
 
-type ViewState = 'landing' | 'dashboard' | 'signup' | 'login' | 'onboarding';
+type ViewState = 'landing' | 'dashboard' | 'signup' | 'login' | 'onboarding' | 'admin';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>('landing');
@@ -26,8 +26,12 @@ const App: React.FC = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) {
+        const isAdmin = session.user?.email === 'bagusfirmansyah2525@gmail.com';
         const needsOnboarding = !session.user?.user_metadata?.onboarding_completed;
-        if (needsOnboarding) {
+
+        if (isAdmin) {
+          setCurrentView('admin');
+        } else if (needsOnboarding) {
           setCurrentView('onboarding');
         } else {
           setCurrentView('dashboard');
@@ -43,8 +47,12 @@ const App: React.FC = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) {
+        const isAdmin = session.user?.email === 'bagusfirmansyah2525@gmail.com';
         const needsOnboarding = !session.user?.user_metadata?.onboarding_completed;
-        if (needsOnboarding) {
+
+        if (isAdmin) {
+          setCurrentView('admin');
+        } else if (needsOnboarding) {
           setCurrentView('onboarding');
         } else {
           setCurrentView('dashboard');
@@ -79,6 +87,10 @@ const App: React.FC = () => {
     return <Dashboard onLogout={handleLogout} user={userMetadata} />;
   }
 
+  if (currentView === 'admin' && session?.user?.email === 'bagusfirmansyah2525@gmail.com') {
+    return <AdminDashboard onLogout={handleLogout} user={session.user} />;
+  }
+
   if (currentView === 'signup') {
     return (
       <SignUp
@@ -96,7 +108,11 @@ const App: React.FC = () => {
           id: session.user.id,
           full_name: session.user.user_metadata?.full_name
         }}
-        onComplete={() => setCurrentView('dashboard')}
+        onComplete={async () => {
+          const { data: { session: refreshedSession } } = await supabase.auth.getSession();
+          setSession(refreshedSession);
+          setCurrentView('dashboard');
+        }}
       />
     );
   }
@@ -126,10 +142,9 @@ const App: React.FC = () => {
           onLoginClick={() => setCurrentView('login')}
           onSignUpClick={() => setCurrentView('signup')}
         />
-        <Hero />
+        <Hero onSignUpClick={() => setCurrentView('signup')} />
         <Features />
         <HowItWorks />
-        <Platforms />
         <Testimonials />
         <Pricing />
         <Footer />

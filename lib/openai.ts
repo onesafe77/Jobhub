@@ -1,3 +1,5 @@
+import { logUserActivity, calculateOpenAICost } from './logger';
+
 /**
  * lib/openai.ts
  * OpenAI helpers for CV parsing and job match scoring.
@@ -43,6 +45,8 @@ export interface UserProfile {
     preferred_roles: string[];
     raw_cv: string;
     subscriptionPlan?: 'free' | 'lite' | 'pro';
+    subscriptionExpiry?: string;
+    preferred_tracking_view?: 'kanban' | 'table';
 }
 
 export interface MatchResult {
@@ -112,6 +116,18 @@ If the CV is in Indonesian (Bahasa), still extract the data but translate skill 
     }
 
     const data = await response.json();
+
+    // Log activity
+    if (data.usage) {
+        logUserActivity({
+            featureName: 'CV Parsing',
+            provider: 'openai',
+            tokensUsed: data.usage.total_tokens,
+            costUsd: calculateOpenAICost(data.model || 'gpt-4o-mini', data.usage.total_tokens),
+            metadata: { model: data.model }
+        });
+    }
+
     const parsed = JSON.parse(data.choices[0].message.content);
     return {
         name: parsed.name || '',
@@ -261,6 +277,18 @@ Description: ${jobDescription.substring(0, 2000)}`
     }
 
     const data = await response.json();
+
+    // Log activity
+    if (data.usage) {
+        logUserActivity({
+            featureName: 'Deep Match Analysis',
+            provider: 'openai',
+            tokensUsed: data.usage.total_tokens,
+            costUsd: calculateOpenAICost(data.model || 'gpt-4o-mini', data.usage.total_tokens),
+            metadata: { model: data.model, jobTitle }
+        });
+    }
+
     const result = JSON.parse(data.choices[0].message.content);
 
     return {
@@ -364,6 +392,18 @@ Be realistic and highly critical, considering format, keywords, readability, and
     }
 
     const data = await response.json();
+
+    // Log activity
+    if (data.usage) {
+        logUserActivity({
+            featureName: 'ATS Analysis',
+            provider: 'openai',
+            tokensUsed: data.usage.total_tokens,
+            costUsd: calculateOpenAICost(data.model || 'gpt-4o-mini', data.usage.total_tokens),
+            metadata: { model: data.model }
+        });
+    }
+
     const result = JSON.parse(data.choices[0].message.content);
 
     return {
@@ -413,6 +453,18 @@ ${cvText}
     }
 
     const data = await response.json();
+
+    // Log activity
+    if (data.usage) {
+        logUserActivity({
+            featureName: 'CV Auto Fix',
+            provider: 'openai',
+            tokensUsed: data.usage.total_tokens,
+            costUsd: calculateOpenAICost(data.model || 'gpt-4o-mini', data.usage.total_tokens),
+            metadata: { model: data.model, issueTitle }
+        });
+    }
+
     let text = data.choices[0].message.content.trim();
     // Remove markdown code blocks if the AI still stubbornly adds them
     if (text.startsWith('```')) {
@@ -473,6 +525,18 @@ Tolong buatkan Cover Letter untuk saya lamar pekerjaan tersebut.`
     }
 
     const data = await response.json();
+
+    // Log activity
+    if (data.usage) {
+        logUserActivity({
+            featureName: 'Cover Letter Generation',
+            provider: 'openai',
+            tokensUsed: data.usage.total_tokens,
+            costUsd: calculateOpenAICost(data.model || 'gpt-4o', data.usage.total_tokens),
+            metadata: { model: data.model }
+        });
+    }
+
     return data.choices[0].message.content.trim();
 }
 /**
@@ -512,6 +576,18 @@ Your task is to rephrase the following ${sectionType} to be more professional, i
     }
 
     const data = await response.json();
+
+    // Log activity
+    if (data.usage) {
+        logUserActivity({
+            featureName: `CV Optimization (${sectionType})`,
+            provider: 'openai',
+            tokensUsed: data.usage.total_tokens,
+            costUsd: calculateOpenAICost(data.model || 'gpt-4o-mini', data.usage.total_tokens),
+            metadata: { model: data.model, sectionType }
+        });
+    }
+
     return data.choices[0].message.content.trim();
 }
 
@@ -591,6 +667,18 @@ Preferred Roles: ${profile.preferred_roles.join(', ')}`
     }
 
     const data = await response.json();
+
+    // Log activity
+    if (data.usage) {
+        logUserActivity({
+            featureName: 'Salary Estimation',
+            provider: 'openai',
+            tokensUsed: data.usage.total_tokens,
+            costUsd: calculateOpenAICost(data.model || 'gpt-4o', data.usage.total_tokens),
+            metadata: { model: data.model }
+        });
+    }
+
     const result = JSON.parse(data.choices[0].message.content);
 
     return {

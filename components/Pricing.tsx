@@ -1,7 +1,117 @@
-import React from 'react';
-import { Check, X, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check, X, Sparkles, Loader2 } from 'lucide-react';
+import { midtransService } from '../lib/midtransService';
+import { loadProfile, saveProfile } from '../lib/openai';
+import { supabase } from '../lib/supabase';
 
 export const Pricing: React.FC<{ onSelectPlan?: (plan: 'free' | 'lite' | 'pro') => void }> = ({ onSelectPlan }) => {
+    const [loading, setLoading] = useState<string | null>(null);
+    const [selectedMethod, setSelectedMethod] = useState<'VC' | 'SP' | 'OV' | 'LA'>('VC');
+
+    const paymentMethods = [
+        { id: 'gopay', name: 'Gopay / QRIS', icon: '📱' },
+        { id: 'shopeepay', name: 'ShopeePay', icon: '🟠' },
+        { id: 'bank_transfer', name: 'Virtual Account', icon: '🏦' },
+        { id: 'credit_card', name: 'Kartu Kredit', icon: '💳' },
+    ];
+
+    const handlePlanSelection = async (plan: 'free' | 'lite' | 'pro', amount: number) => {
+        if (plan === 'free') {
+            onSelectPlan && onSelectPlan('free');
+            return;
+        }
+
+        setLoading(plan);
+        const profile = loadProfile();
+        const orderId = `JOBHUB-${Date.now()}`;
+
+        try {
+            // 1. Load Snap Script
+            await midtransService.loadSnapScript();
+
+            // 2. Create Transaction / Get Token
+            const response = await midtransService.createSnapToken({
+                orderId: orderId,
+                grossAmount: amount,
+                firstName: profile?.name?.split(' ')[0] || 'User',
+                lastName: profile?.name?.split(' ').slice(1).join(' ') || '',
+                email: profile?.email || 'user@example.com',
+                phone: '08123456789' // Mock
+            });
+
+            // 3. Save pending transaction to billing_history
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                await supabase.from('billing_history').insert({
+                    user_id: user.id,
+                    merchant_order_id: orderId,
+                    amount: amount,
+                    status: 'pending',
+                    plan_type: plan
+                });
+            }
+
+            // 4. Open Midtrans Snap Popup
+            const snap = (window as any).snap;
+            if (snap) {
+                snap.pay(response.token, {
+                    onSuccess: async function (result: any) {
+                        console.log('[Midtrans] Success:', result);
+
+                        // Calculate expiry date (1 month from now)
+                        const expiryDate = new Date();
+                        expiryDate.setMonth(expiryDate.getMonth() + 1);
+                        const expiryIso = expiryDate.toISOString();
+
+                        // Update User Plan in Supabase & LocalStorage
+                        const { data: { user } } = await supabase.auth.getUser();
+                        if (user) {
+                            // 1. Update Supabase profiles
+                            await supabase.from('profiles').update({
+                                subscriptionPlan: plan,
+                                subscriptionExpiry: expiryIso
+                            }).eq('id', user.id);
+
+                            // 2. Also update user_subscriptions table for BillingView
+                            await supabase.from('user_subscriptions').upsert({
+                                user_id: user.id,
+                                plan_type: plan,
+                                status: 'active',
+                                expiry_date: expiryIso,
+                                amount: amount
+                            });
+
+                            // 3. Update LocalStorage
+                            const currentProfile = loadProfile();
+                            if (currentProfile) {
+                                saveProfile({
+                                    ...currentProfile,
+                                    subscriptionPlan: plan,
+                                    subscriptionExpiry: expiryIso
+                                });
+                            }
+                        }
+
+                        window.location.href = '/dashboard?payment=success';
+                    },
+                    onPending: function (result: any) {
+                        console.log('[Midtrans] Pending:', result);
+                        window.location.href = '/dashboard?payment=pending';
+                    },
+                    onClose: function () {
+                        setLoading(null);
+                    }
+                });
+            } else {
+                throw new Error('Midtrans Snap failed to load.');
+            }
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Gagal memproses pembayaran. Silakan coba lagi.';
+            alert(errorMessage);
+            setLoading(null);
+        }
+    };
+
     return (
         <section className="py-24 lg:py-32 bg-slate-50 relative overflow-hidden" id="harga">
             {/* Background decoration */}
@@ -11,13 +121,30 @@ export const Pricing: React.FC<{ onSelectPlan?: (plan: 'free' | 'lite' | 'pro') 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
                 {/* Header */}
-                <div className="text-center max-w-3xl mx-auto mb-16 lg:mb-24">
+                <div className="text-center max-w-3xl mx-auto mb-12">
                     <h2 className="text-4xl lg:text-[52px] font-bold text-slate-900 mb-6 leading-tight">
                         Pilih Paket yang Sesuai
                     </h2>
-                    <p className="text-lg lg:text-xl text-slate-600">
+                    <p className="text-lg lg:text-xl text-slate-600 mb-8">
                         Mulai gratis, upgrade kapanpun
                     </p>
+
+                    {/* Payment Method Selector */}
+                    <div className="inline-flex flex-wrap justify-center gap-3 p-2 bg-white rounded-2xl border border-slate-200 shadow-sm mb-8">
+                        {paymentMethods.map((method) => (
+                            <button
+                                key={method.id}
+                                onClick={() => setSelectedMethod(method.id as any)}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${selectedMethod === method.id
+                                    ? 'bg-brand-600 text-white shadow-md shadow-brand-500/20'
+                                    : 'text-slate-600 hover:bg-slate-50'
+                                    }`}
+                            >
+                                <span>{method.icon}</span>
+                                {method.name}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Pricing Cards Grid */}
@@ -55,7 +182,7 @@ export const Pricing: React.FC<{ onSelectPlan?: (plan: 'free' | 'lite' | 'pro') 
                         </div>
 
                         <button
-                            onClick={() => onSelectPlan && onSelectPlan('free')}
+                            onClick={() => handlePlanSelection('free', 0)}
                             className="w-full py-3 rounded-xl border border-slate-200 font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all duration-200"
                         >
                             Mulai Trial
@@ -102,10 +229,11 @@ export const Pricing: React.FC<{ onSelectPlan?: (plan: 'free' | 'lite' | 'pro') 
                         </div>
 
                         <button
-                            onClick={() => onSelectPlan && onSelectPlan('lite')}
-                            className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-brand-400 text-white font-bold shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:-translate-y-0.5 transition-all duration-200"
+                            disabled={loading !== null}
+                            onClick={() => handlePlanSelection('lite', 29900)}
+                            className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-brand-400 text-white font-bold shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2"
                         >
-                            Pilih Paket Lite
+                            {loading === 'lite' ? <Loader2 className="animate-spin" size={20} /> : 'Pilih Paket Lite'}
                         </button>
                     </div>
 
@@ -145,10 +273,11 @@ export const Pricing: React.FC<{ onSelectPlan?: (plan: 'free' | 'lite' | 'pro') 
                             </div>
 
                             <button
-                                onClick={() => onSelectPlan && onSelectPlan('pro')}
-                                className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-700 to-brand-500 text-white font-bold shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:-translate-y-0.5 transition-all duration-200"
+                                disabled={loading !== null}
+                                onClick={() => handlePlanSelection('pro', 49900)}
+                                className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-700 to-brand-500 text-white font-bold shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2"
                             >
-                                Upgrade ke PRO
+                                {loading === 'pro' ? <Loader2 className="animate-spin" size={20} /> : 'Upgrade ke PRO'}
                             </button>
                         </div>
                     </div>

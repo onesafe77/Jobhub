@@ -3,7 +3,6 @@ import { ArrowUpRight } from 'lucide-react';
 
 const platforms = [
   { name: 'LinkedIn', domain: 'linkedin.com', count: '5.2k jobs', color: '#0A66C2' },
-  { name: 'Glints', domain: 'glints.com', count: '1.8k jobs', color: '#00C48C' },
   { name: 'JobStreet', domain: 'jobstreet.co.id', count: '3.4k jobs', color: '#FF6000' },
   { name: 'Indeed', domain: 'indeed.com', count: '2.1k jobs', color: '#2164F3' },
   { name: 'Kalibrr', domain: 'kalibrr.com', count: '850 jobs', color: '#6633CC' },

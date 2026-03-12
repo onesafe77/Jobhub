@@ -1,7 +1,4 @@
-/**
- * SCRAPER ROUTER SERVICE (Boilerplate)
- * Kombinasi Apify (Marketplace) + ZenRows (Custom Fallback)
- */
+import { logUserActivity, calculateApifyCost } from './logger';
 
 interface ScrapedJob {
     title: string;
@@ -140,6 +137,15 @@ export const scraperService = {
             }
 
             console.log(`[Apify] Data berhasil diterima: ${items.length} items`);
+
+            // Log activity
+            logUserActivity({
+                featureName: 'LinkedIn Job Scraping',
+                provider: 'apify',
+                costUsd: calculateApifyCost('linkedin-jobs-scraper', items.length),
+                metadata: { query, location, resultsCount: items.length }
+            });
+
             if (items.length === 0) return [];
 
             const jobs = items.map((item: any) => ({
@@ -190,6 +196,14 @@ export const scraperService = {
 
         const data = await response.json();
         console.log("[ZenRows] Data received:", data);
+
+        // Log activity
+        logUserActivity({
+            featureName: 'Custom Web Scraping (ZenRows)',
+            provider: 'zenrows',
+            costUsd: 0.002, // Fixed cost per request
+            metadata: { url }
+        });
 
         // Handle jika data adalah array (misal hasil search page)
         let items = [];
@@ -252,6 +266,14 @@ export const scraperService = {
 
             const items = await response.json();
             console.log(`[Apify] IG Data berhasil diterima: ${items.length} items`);
+
+            // Log activity
+            logUserActivity({
+                featureName: 'Instagram Scraping',
+                provider: 'apify',
+                costUsd: calculateApifyCost('instagram-scraper', items.length),
+                metadata: { usernames, resultsCount: items.length }
+            });
 
             return items.map((item: any) => ({
                 id: item.id || Math.random().toString(),

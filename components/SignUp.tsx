@@ -104,10 +104,7 @@ export const SignUp: React.FC<SignUpProps> = ({ onLoginClick, onSignUpComplete, 
                      "Platform ini revolusioner. Dapat interview pertama cuma dalam 2 minggu tanpa harus buka 5 tab job portal yang beda-beda!"
                   </p>
                   <div className="flex items-center gap-4 relative z-10">
-                     <div className="relative">
-                        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80" alt="Sarah" className="w-14 h-14 rounded-full border-2 border-brand-500/30 object-cover" />
-                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-[#0B0F19] rounded-full"></div>
-                     </div>
+                     <img src="/map-indonesia.png" alt="Map" className="w-14 h-14 rounded-full border-2 border-brand-500/30 object-cover" />
                      <div>
                         <div className="font-bold text-white text-base">Sarah Wijaya</div>
                         <div className="text-sm text-brand-300 font-medium">Product Designer</div>

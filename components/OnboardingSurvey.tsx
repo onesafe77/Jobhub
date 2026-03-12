@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Sparkles, Briefcase, MapPin, Target, ArrowRight, Loader2, Rocket, CheckCircle2, Coins } from 'lucide-react';
+import { Sparkles, Briefcase, MapPin, Target, ArrowRight, Loader2, Rocket, CheckCircle2, Coins, Search, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { scraperService } from '../lib/scraperService';
+import { saveProfile, UserProfile } from '../lib/openai';
 
 interface OnboardingSurveyProps {
     onComplete: () => void;
@@ -19,8 +20,10 @@ export const OnboardingSurvey: React.FC<OnboardingSurveyProps> = ({ onComplete, 
         selected_locations: [] as string[],
         experience: '0-1 year',
         goal: 'Mencari pekerjaan baru',
-        salary_expectation: 'Rp 5 Juta - Rp 10 Juta'
+        salary_expectation: 'Rp 5 Juta - Rp 10 Juta',
+        preferred_tracking_view: 'kanban' as 'kanban' | 'table'
     });
+    const [jobSearch, setJobSearch] = useState('');
 
     const toggleJob = (job: string) => {
         setFormData(prev => ({
@@ -58,6 +61,14 @@ export const OnboardingSurvey: React.FC<OnboardingSurveyProps> = ({ onComplete, 
             });
 
             if (error) throw error;
+
+            // Save local profile immediately
+            const newProfile: UserProfile = {
+                preferred_roles: formData.selected_jobs,
+                raw_cv: '', // Will be updated in Dashboard/Settings
+                preferred_tracking_view: formData.preferred_tracking_view
+            } as UserProfile;
+            saveProfile(newProfile);
 
             if (formData.selected_jobs.length > 0) {
                 // Trigger scraping for ALL selected jobs and first selected location (or Indonesia if none)
@@ -98,6 +109,28 @@ export const OnboardingSurvey: React.FC<OnboardingSurveyProps> = ({ onComplete, 
                                     <button onClick={() => toggleJob(job)} className="hover:text-brand-200 font-black">×</button>
                                 </span>
                             ))
+                        )}
+                    </div>
+
+                    {/* Search Input */}
+                    <div className="relative group">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-colors">
+                            <Search size={18} />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Ketik posisi pekerjaan Anda... (Contoh: Backend, HSE, Admin)"
+                            value={jobSearch}
+                            onChange={(e) => setJobSearch(e.target.value)}
+                            className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all font-bold text-slate-700 placeholder:text-slate-400 placeholder:font-medium shadow-sm"
+                        />
+                        {jobSearch && (
+                            <button
+                                onClick={() => setJobSearch('')}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-full transition-all"
+                            >
+                                <X size={16} />
+                            </button>
                         )}
                     </div>
 
@@ -156,7 +189,7 @@ export const OnboardingSurvey: React.FC<OnboardingSurveyProps> = ({ onComplete, 
                             // HOSPITALITY & RETAIL
                             'Store Manager', 'Cashier', 'Waiter/Waitress', 'Chef', 'Barista', 'Hotel Management',
                             'F&B Manager', 'Housekeeping Supervisor'
-                        ].map((role) => (
+                        ].filter(role => role.toLowerCase().includes(jobSearch.toLowerCase())).map((role) => (
                             <button
                                 key={role}
                                 onClick={() => toggleJob(role)}
@@ -287,6 +320,42 @@ export const OnboardingSurvey: React.FC<OnboardingSurveyProps> = ({ onComplete, 
                     ))}
                 </div>
             )
+        },
+        {
+            id: 5,
+            title: "Pilih Tampilan Tracker Anda",
+            subtitle: "Pilih gaya tampilan yang paling nyaman untuk mengelola proses lamaran Anda.",
+            icon: <Target className="text-brand-600" size={32} />,
+            content: (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {[
+                        { id: 'kanban', title: 'Kanban Board', desc: 'Visual step-by-step', icon: '📋' },
+                        { id: 'table', title: 'Daftar Tabel', desc: 'Ringkas & Detail', icon: '📝' }
+                    ].map((view) => (
+                        <button
+                            key={view.id}
+                            onClick={() => setFormData({ ...formData, preferred_tracking_view: view.id as any })}
+                            className={`p-6 rounded-3xl border-2 text-left transition-all duration-300 transform active:scale-[0.99] relative overflow-hidden group ${formData.preferred_tracking_view === view.id
+                                ? 'bg-slate-900 border-slate-900 shadow-xl text-white'
+                                : 'bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50 text-slate-700'
+                                }`}
+                        >
+                            <div className="relative z-10">
+                                <span className="text-3xl mb-4 block">{view.icon}</span>
+                                <h4 className="font-bold text-lg mb-1">{view.title}</h4>
+                                <p className={`text-sm font-medium ${formData.preferred_tracking_view === view.id ? 'text-slate-400' : 'text-slate-500'}`}>
+                                    {view.desc}
+                                </p>
+                            </div>
+                            {formData.preferred_tracking_view === view.id && (
+                                <div className="absolute top-4 right-4 text-brand-400">
+                                    <CheckCircle2 size={24} />
+                                </div>
+                            )}
+                        </button>
+                    ))}
+                </div>
+            )
         }
     ];
 
@@ -313,7 +382,7 @@ export const OnboardingSurvey: React.FC<OnboardingSurveyProps> = ({ onComplete, 
                 {/* Progress Indicators */}
                 <div className="mb-10 flex justify-center items-center px-4 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
                     <div className="flex items-center gap-3 bg-white py-3 px-6 rounded-full shadow-sm border border-slate-100">
-                        {[1, 2, 3, 4].map((s) => (
+                        {[1, 2, 3, 4, 5].map((s) => (
                             <React.Fragment key={s}>
                                 <div
                                     className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm transition-all duration-500 ${s === step ? 'bg-slate-900 text-white shadow-md scale-110' : (s < step ? 'bg-brand-100 text-brand-600' : 'bg-slate-100 text-slate-400')
@@ -321,7 +390,7 @@ export const OnboardingSurvey: React.FC<OnboardingSurveyProps> = ({ onComplete, 
                                 >
                                     {s < step ? <CheckCircle2 size={16} /> : s}
                                 </div>
-                                {s < 4 && (
+                                {s < 5 && (
                                     <div className={`w-8 h-[2px] rounded-full transition-all duration-500 ${s < step ? 'bg-brand-500' : 'bg-slate-200'}`} />
                                 )}
                             </React.Fragment>
@@ -357,7 +426,7 @@ export const OnboardingSurvey: React.FC<OnboardingSurveyProps> = ({ onComplete, 
                             </button>
                         ) : <div />}
 
-                        {step < 4 ? (
+                        {step < 5 ? (
                             <button
                                 onClick={handleNext}
                                 disabled={step === 1 && formData.selected_jobs.length === 0}

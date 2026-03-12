@@ -1,96 +1,103 @@
 import React from 'react';
-import { Search, ArrowRight, Trophy, Star } from 'lucide-react';
-import { DashboardMockup } from './DashboardMockup';
+import { ArrowRight } from 'lucide-react';
 
-export const Hero: React.FC = () => {
+interface HeroProps {
+  onSignUpClick?: () => void;
+}
+
+export const Hero: React.FC<HeroProps> = ({ onSignUpClick }) => {
   return (
-    <section className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20 lg:pt-40 lg:pb-32">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+    <section className="relative w-full pt-36 pb-24 lg:pt-48 lg:pb-36 overflow-hidden">
+      {/* Subtle background gradient */}
+      <div className="absolute inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-brand-100/30 rounded-full blur-[120px]"></div>
+      </div>
 
-        {/* LEFT SIDE: Content */}
-        <div className="flex flex-col items-start max-w-2xl mx-auto lg:mx-0 z-20">
+      <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
 
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-brand-600 text-xs font-bold tracking-wide uppercase mb-8 shadow-sm hover:bg-blue-100 transition-colors cursor-default">
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-600 animate-pulse"></span>
-            Hemat 2 Jam Setiap Hari
+        {/* Platform Badges */}
+        <div className="flex items-center justify-center gap-3 mb-10 animate-fade-in-up">
+          <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-slate-200 shadow-sm">
+            <div className="w-5 h-5 rounded bg-[#0A66C2] flex items-center justify-center">
+              <span className="text-white text-[10px] font-black">in</span>
+            </div>
+            <span className="text-sm font-bold text-slate-700">LinkedIn</span>
           </div>
-
-          {/* Headline */}
-          <h1 className="text-5xl lg:text-[72px] leading-[1.1] font-bold text-slate-900 tracking-tight mb-6">
-            Cari Kerja di 10+ Platform, Cukup{' '}
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-600 via-brand-400 to-brand-300">
-              1× Search
-            </span>
-          </h1>
-
-          {/* Subheading */}
-          <p className="text-lg lg:text-xl text-slate-500 mb-10 leading-relaxed max-w-lg">
-            AI-powered job search untuk fresh graduates. Aggregasi LinkedIn, JobStreet, Glints, dan lainnya dalam satu tempat dashboard pintar.
-          </p>
-
-          {/* STATS ABOVE BUTTON */}
-          <div className="flex flex-wrap items-center gap-8 mb-8 animate-fade-in-up">
-            <div className="flex flex-col">
-              <span className="text-3xl font-bold text-slate-900 tracking-tight font-mono">10k+</span>
-              <span className="text-xs text-slate-500 font-bold uppercase tracking-wider mt-1">Lowongan</span>
+          <span className="text-slate-300 font-bold">+</span>
+          <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-slate-200 shadow-sm">
+            <div className="w-5 h-5 rounded bg-[#1D2B7B] flex items-center justify-center">
+              <span className="text-white text-[10px] font-black">JS</span>
             </div>
-            <div className="w-px h-10 bg-slate-200"></div>
-            <div className="flex flex-col">
-              <span className="text-3xl font-bold text-slate-900 tracking-tight font-mono">5k+</span>
-              <span className="text-xs text-slate-500 font-bold uppercase tracking-wider mt-1">Users</span>
-            </div>
-            <div className="w-px h-10 bg-slate-200"></div>
-            <div className="flex flex-col">
-              <span className="text-3xl font-bold text-slate-900 tracking-tight font-mono">92%</span>
-              <span className="text-xs text-slate-500 font-bold uppercase tracking-wider mt-1">Match Rate</span>
-            </div>
-          </div>
-
-          {/* Search Bar (The "Button" Area) */}
-          <div className="w-full relative group z-30">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-brand-300 rounded-2xl opacity-20 blur group-hover:opacity-40 transition duration-500"></div>
-            <div className="relative flex items-center bg-white rounded-xl p-2 shadow-xl shadow-blue-900/5 border border-slate-100">
-              <Search className="ml-4 text-slate-400" size={24} />
-              <input
-                type="text"
-                placeholder="Frontend Developer Jakarta"
-                className="w-full px-4 py-4 text-lg text-slate-900 placeholder:text-slate-400 focus:outline-none bg-transparent"
-              />
-              <button className="hidden sm:flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-8 py-3.5 rounded-lg font-semibold transition-all shadow-md hover:shadow-lg whitespace-nowrap">
-                Cari Pekerjaan
-                <ArrowRight size={18} />
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Search Button (Visible only on small screens) */}
-          <button className="mt-4 w-full sm:hidden flex items-center justify-center gap-2 bg-brand-600 text-white px-6 py-4 rounded-xl font-semibold shadow-lg">
-            Cari Pekerjaan <ArrowRight size={18} />
-          </button>
-
-          {/* Badges / Trust Line */}
-          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm font-medium text-slate-500">
-            <span className="flex items-center gap-2 px-3 py-1 bg-orange-50 text-orange-700 rounded-full border border-orange-100">
-              <Trophy size={14} className="fill-orange-500 text-orange-500" />
-              Product Hunt #1
-            </span>
-            <span className="flex items-center gap-2">
-              <Star size={16} className="fill-yellow-400 text-yellow-400" />
-              4.9 Rating
-            </span>
-            <span className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-red-600 border-2 border-slate-100 relative overflow-hidden shadow-sm">
-                <div className="absolute bottom-0 w-full h-1/2 bg-white"></div>
-              </div>
-              Made in Indonesia
-            </span>
+            <span className="text-sm font-bold text-slate-700">JobStreet</span>
           </div>
         </div>
 
-        {/* RIGHT SIDE: 3D Mockup */}
-        <div className="relative lg:h-[600px] flex items-center justify-center lg:justify-end perspective-container">
-          <DashboardMockup />
+        {/* Headline */}
+        <h1 className="text-5xl sm:text-6xl lg:text-[80px] leading-[1.05] font-[900] text-slate-900 tracking-tight mb-8">
+          Cari kerja di 2 platform.
+          <br />
+          <span className="text-brand-600">Satu dashboard.</span>
+        </h1>
+
+        {/* Subheadline */}
+        <p className="text-lg lg:text-xl text-slate-500 max-w-2xl mx-auto mb-12 leading-relaxed font-medium">
+          Upload CV, dapatkan AI match score, generate cover letter, dan track semua lamaran — semua dari satu tempat.
+        </p>
+
+        {/* CTA Buttons */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+          <button
+            onClick={onSignUpClick}
+            className="px-8 py-4 bg-brand-600 hover:bg-brand-700 text-white rounded-2xl font-bold text-lg transition-all shadow-lg shadow-brand-600/20 hover:shadow-brand-600/30 flex items-center gap-3 active:scale-[0.97]"
+          >
+            Mulai Gratis
+            <ArrowRight size={20} strokeWidth={2.5} />
+          </button>
+          <a href="#fitur" className="px-8 py-4 text-slate-600 hover:text-slate-900 font-semibold text-lg transition-colors flex items-center gap-2">
+            Lihat Fitur
+            <ArrowRight size={18} />
+          </a>
+        </div>
+
+        {/* Powered By Pills */}
+        <div className="flex flex-col items-center justify-center pt-8 border-t border-slate-100">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Integrasi dengan AI Terbaik</p>
+          <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
+
+            {/* ChatGPT */}
+            <div className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-full shadow-sm hover:translate-y-[-2px] hover:shadow-md transition-all">
+              <img src="/chatgpt.jpg" alt="ChatGPT" className="w-5 h-5 object-contain" />
+              <span className="text-slate-700 font-bold">ChatGPT</span>
+            </div>
+
+            {/* Claude */}
+            <div className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-full shadow-sm hover:translate-y-[-2px] hover:shadow-md transition-all">
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-[#cc785c]"><path d="M12 2v20M19.071 4.929l-14.142 14.142M22 12H2M19.071 19.071L4.929 4.929" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              <span className="text-slate-700 font-bold">Claude</span>
+            </div>
+
+            {/* Gemini */}
+            <div className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-full shadow-sm hover:translate-y-[-2px] hover:shadow-md transition-all">
+              <svg viewBox="0 0 24 24" fill="url(#gemini-gradient)" className="w-5 h-5">
+                <defs>
+                  <linearGradient id="gemini-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#4285F4" />
+                    <stop offset="50%" stopColor="#9B72CB" />
+                    <stop offset="100%" stopColor="#D96570" />
+                  </linearGradient>
+                </defs>
+                <path d="M12 0c0 6.627 5.373 12 12 12-6.627 0-12 5.373-12 12C12 17.373 6.627 12 0 12 6.627 12 12 6.627 12 0z" />
+              </svg>
+              <span className="text-slate-700 font-bold">Gemini</span>
+            </div>
+
+            {/* Notion */}
+            <div className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-full shadow-sm hover:translate-y-[-2px] hover:shadow-md transition-all">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/4/45/Notion_app_logo.png" alt="Notion" className="w-5 h-5 object-contain" />
+              <span className="text-slate-700 font-bold">Notion</span>
+            </div>
+
+          </div>
         </div>
 
       </div>
