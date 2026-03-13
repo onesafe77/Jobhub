@@ -81,7 +81,12 @@ export const Pricing: React.FC<{ onSelectPlan?: (plan: 'free' | 'lite' | 'pro') 
                                 amount: amount
                             });
 
-                            // 3. Update LocalStorage
+                            // 3. Update billing_history status to success
+                            await supabase.from('billing_history')
+                                .update({ status: 'success' })
+                                .eq('merchant_order_id', orderId);
+
+                            // 4. Update LocalStorage
                             const currentProfile = loadProfile();
                             if (currentProfile) {
                                 saveProfile({
