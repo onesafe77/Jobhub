@@ -2890,7 +2890,11 @@ const NotificationsView: React.FC<{ notifications: any[]; onMarkRead: (id: numbe
           notifications.map(notif => (
             <div
               key={notif.id}
-              onClick={() => { onMarkRead(notif.id); onViewChange('applications'); }}
+              onClick={() => {
+                onMarkRead(notif.id);
+                if (notif.type === 'match') onViewChange('search');
+                else if (notif.type === 'application') onViewChange('applications');
+              }}
               className={`group relative bg-white rounded-2xl p-5 border transition-all duration-300 cursor-pointer overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-5 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] 
                 ${notif.unread
                   ? 'border-brand-200 shadow-md shadow-brand-500/5 ring-1 ring-brand-500/10'
