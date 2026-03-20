@@ -78,7 +78,8 @@ export const Pricing: React.FC<{ onSelectPlan?: (plan: 'free' | 'lite' | 'pro') 
                                 plan_type: plan,
                                 status: 'active',
                                 expiry_date: expiryIso,
-                                amount: amount
+                                amount: amount,
+                                merchant_order_id: orderId
                             });
 
                             // 3. Update billing_history status to success
