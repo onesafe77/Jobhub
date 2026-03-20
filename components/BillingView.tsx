@@ -16,6 +16,7 @@ import { UserProfile } from '../lib/openai';
 import { supabase } from '../lib/supabase';
 import { midtransService } from '../lib/midtransService';
 import { RefreshCw } from 'lucide-react';
+import { generateInvoicePDF } from '../lib/invoiceGenerator';
 
 interface SubscriptionData {
     plan_type: 'lite' | 'pro';
@@ -30,6 +31,7 @@ interface BillingItem {
     amount: number;
     status: string;
     merchant_order_id: string;
+    plan_type?: string;
 }
 
 interface BillingViewProps {
@@ -45,6 +47,17 @@ export const BillingView: React.FC<BillingViewProps> = ({ userProfile, onNavigat
     const plan = subscription?.plan_type || userProfile?.subscriptionPlan || 'free';
     const isPro = plan === 'pro';
     const isLite = plan === 'lite';
+
+    const handleDownloadInvoice = (item: BillingItem) => {
+        generateInvoicePDF({
+            orderId: item.merchant_order_id,
+            date: new Date(item.created_at).toLocaleDateString('id-ID'),
+            amount: item.amount,
+            planType: item.plan_type || 'PRO',
+            userName: userProfile?.name || 'User',
+            userEmail: userProfile?.email || ''
+        });
+    };
 
     const handleRefreshStatus = async (merchantOrderId: string) => {
         try {
@@ -82,7 +95,8 @@ export const BillingView: React.FC<BillingViewProps> = ({ userProfile, onNavigat
                             plan_type: hist.plan_type,
                             status: 'active',
                             expiry_date: expiryDate.toISOString(),
-                            amount: hist.amount
+                            amount: hist.amount,
+                            merchant_order_id: merchantOrderId
                         });
                 }
 
@@ -316,7 +330,11 @@ export const BillingView: React.FC<BillingViewProps> = ({ userProfile, onNavigat
                                                 <RefreshCw size={14} className="animate-spin-hover" /> Refresh
                                             </button>
                                         )}
-                                        <button className="p-2 text-slate-400 hover:text-brand-600 transition-colors">
+                                        <button
+                                            onClick={() => handleDownloadInvoice(inv)}
+                                            className="p-2 text-slate-400 hover:text-brand-600 transition-colors"
+                                            title="Download Invoice"
+                                        >
                                             <Download size={18} />
                                         </button>
                                     </td>
