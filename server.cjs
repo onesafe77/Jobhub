@@ -9,13 +9,24 @@ const PORT = process.env.PORT || 3000;
 // Enable CORS for all requests
 app.use(cors());
 
-// Proxy requests to Midtrans Snap API
+// Helper to get Midtrans Auth Header
+const getMidtransAuth = () => {
+    const serverKey = process.env.VITE_MIDTRANS_SERVER_KEY || '';
+    return Buffer.from(serverKey.trim() + ":").toString('base64');
+};
+
+// Proxy requests to Midtrans Snap API (Securely)
 app.use('/snap/v1/transactions', createProxyMiddleware({
-    target: 'https://app.sandbox.midtrans.com',
+    target: 'https://app.sandbox.midtrans.com/snap/v1/transactions',
     changeOrigin: true,
     secure: false,
+    pathRewrite: {
+        '^/snap/v1/transactions': ''
+    },
     onProxyReq: (proxyReq, req, res) => {
-        console.log('[Proxy] Requesting Midtrans Snap:', req.url);
+        const auth = getMidtransAuth();
+        proxyReq.setHeader('Authorization', `Basic ${auth}`);
+        console.log('[Proxy] Securely requesting Midtrans Snap');
     },
     onProxyRes: (proxyRes, req, res) => {
         console.log('[Proxy] Midtrans Response status:', proxyRes.statusCode);
@@ -25,16 +36,18 @@ app.use('/snap/v1/transactions', createProxyMiddleware({
     }
 }));
 
-// Proxy requests to Midtrans Status API
+// Proxy requests to Midtrans Status API (Securely)
 app.use('/v2/status', createProxyMiddleware({
-    target: 'https://api.sandbox.midtrans.com',
+    target: 'https://api.sandbox.midtrans.com/v2',
     changeOrigin: true,
     secure: false,
     pathRewrite: {
-        '^/v2/status': '/v2'
+        '^/v2/status': ''
     },
     onProxyReq: (proxyReq, req, res) => {
-        console.log('[Proxy] Requesting Midtrans Status:', req.url);
+        const auth = getMidtransAuth();
+        proxyReq.setHeader('Authorization', `Basic ${auth}`);
+        console.log('[Proxy] Securely requesting Midtrans Status');
     }
 }));
 

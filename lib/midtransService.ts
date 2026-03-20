@@ -27,13 +27,6 @@ export const midtransService = {
      * Generate Snap Token for checkout
      */
     async createSnapToken(request: MidtransTransactionRequest): Promise<MidtransSnapResponse> {
-        if (!SERVER_KEY || SERVER_KEY.includes('XXXXX')) {
-            throw new Error('Midtrans Server Key belum diatur di .env.local');
-        }
-
-        // Basic Auth: base64(server_key + ":")
-        const auth = btoa(SERVER_KEY + ":");
-
         const payload = {
             transaction_details: {
                 order_id: request.orderId,
@@ -57,8 +50,7 @@ export const midtransService = {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'Authorization': `Basic ${auth}`
+                    'Accept': 'application/json'
                 },
                 body: JSON.stringify(payload)
             });
@@ -99,11 +91,6 @@ export const midtransService = {
      * Check transaction status
      */
     async checkStatus(orderId: string): Promise<any> {
-        if (!SERVER_KEY || SERVER_KEY.includes('XXXXX')) {
-            throw new Error('Midtrans Server Key belum diatur di .env.local');
-        }
-
-        const auth = btoa(SERVER_KEY + ":");
         const statusUrl = `/v2/status/${orderId}/status`;
 
         try {
@@ -111,8 +98,7 @@ export const midtransService = {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'Authorization': `Basic ${auth}`
+                    'Content-Type': 'application/json'
                 }
             });
 
