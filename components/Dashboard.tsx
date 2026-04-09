@@ -1789,7 +1789,7 @@ const JobDetail: React.FC<{ job: Job; onBack: () => void; userProfile: UserProfi
         userContext = `Applicant Identity:\nName: ${user.full_name || '[Applicant Name]'}\nEmail: ${user.email || '[Applicant Email]'}`;
       }
 
-      const response = await fetch(getAiEndpoint(), {
+      let response = await fetch(getAiEndpoint(), {
         method: 'POST',
         headers: getAiHeaders(apiKey),
         body: JSON.stringify({
@@ -1808,7 +1808,33 @@ const JobDetail: React.FC<{ job: Job; onBack: () => void; userProfile: UserProfi
         })
       });
 
-      if (!response.ok) throw new Error("API request failed");
+      // Fallback to GPT-4o-mini if Claude fails
+      if (!response.ok) {
+        console.warn("Claude failed, falling back to gpt-4o-mini...");
+        response = await fetch(getAiEndpoint(), {
+          method: 'POST',
+          headers: getAiHeaders(apiKey),
+          body: JSON.stringify({
+            model: resolveModel('openai/gpt-4o-mini'),
+            temperature: 0.7,
+            messages: [
+              {
+                role: 'system',
+                content: 'You are an expert career consultant. Write a professional cover letter in English.'
+              },
+              {
+                role: 'user',
+                content: `Draft a cover letter for the ${job.title} role at ${job.company}.\nJob Description snippet: ${job.description}\n\nApplicant Profile Context:\n${userContext}`
+              }
+            ]
+          })
+        });
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `API error (${response.status})`);
+      }
       const data = await response.json();
       const letterContent = data.choices[0].message.content || "Draft could not be generated.";
 
@@ -1860,7 +1886,7 @@ const JobDetail: React.FC<{ job: Job; onBack: () => void; userProfile: UserProfi
         }
       }
 
-      const response = await fetch(getAiEndpoint(), {
+      let response = await fetch(getAiEndpoint(), {
         method: 'POST',
         headers: getAiHeaders(apiKey),
         body: JSON.stringify({
@@ -1883,7 +1909,33 @@ const JobDetail: React.FC<{ job: Job; onBack: () => void; userProfile: UserProfi
         })
       });
 
-      if (!response.ok) throw new Error("API request failed");
+      // Fallback
+      if (!response.ok) {
+        console.warn("Claude failed, falling back to gpt-4o-mini...");
+        response = await fetch(getAiEndpoint(), {
+          method: 'POST',
+          headers: getAiHeaders(apiKey),
+          body: JSON.stringify({
+            model: resolveModel('openai/gpt-4o-mini'),
+            temperature: 0.7,
+            messages: [
+              {
+                role: 'system',
+                content: 'You are an expert career consultant. Write a professional cover letter in English.'
+              },
+              {
+                role: 'user',
+                content: `Draft a cover letter for the ${job.title} role at ${job.company}.\nJob Description snippet: ${job.description}\n\nApplicant Profile Context:\n${userContext}`
+              }
+            ]
+          })
+        });
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `API error (${response.status})`);
+      }
       const data = await response.json();
       setCoverLetter(data.choices[0].message.content || "Draft could not be generated.");
     } catch (err: any) {
