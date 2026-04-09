@@ -5,8 +5,15 @@
  */
 
 const CLIENT_KEY = (import.meta.env.VITE_MIDTRANS_CLIENT_KEY || 'SB-Mid-client-XXXXX').trim();
-const SERVER_KEY = (import.meta.env.VITE_MIDTRANS_SERVER_KEY || 'SB-Mid-server-XXXXX').trim();
-const BASE_URL = '/snap/v1/transactions'; // Proxied to app.sandbox.midtrans.com
+const SERVER_KEY = (import.meta.env.VITE_MIDTRANS_SERVER_KEY || '').trim();
+const MIDTRANS_ENV = (import.meta.env.VITE_MIDTRANS_ENV || 'sandbox').toLowerCase();
+const IS_PRODUCTION = MIDTRANS_ENV === 'production';
+
+const MIDTRANS_SNAP_URL = IS_PRODUCTION
+    ? 'https://app.midtrans.com/snap/snap.js'
+    : 'https://app.sandbox.midtrans.com/snap/snap.js';
+
+const BASE_URL = '/snap/v1/transactions';
 
 export interface MidtransTransactionRequest {
     orderId: string;
@@ -75,12 +82,16 @@ export const midtransService = {
     async loadSnapScript(): Promise<void> {
         return new Promise((resolve) => {
             if (document.getElementById('midtrans-snap-script')) {
-                resolve();
-                return;
+                const existingScript = document.getElementById('midtrans-snap-script') as HTMLScriptElement;
+                if (existingScript.src === MIDTRANS_SNAP_URL) {
+                    resolve();
+                    return;
+                }
+                existingScript.remove();
             }
             const script = document.createElement('script');
             script.id = 'midtrans-snap-script';
-            script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
+            script.src = MIDTRANS_SNAP_URL;
             script.setAttribute('data-client-key', CLIENT_KEY);
             script.onload = () => resolve();
             document.head.appendChild(script);

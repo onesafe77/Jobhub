@@ -6,7 +6,7 @@ import {
   Star, X, CheckCircle2, ArrowLeft, ArrowRight, ExternalLink, Share2, AlertCircle, Check, Target,
   MoreHorizontal, ChevronLeft, Clock, Download, AlertTriangle, Lightbulb,
   Plus, Minus, ChevronDown, ChevronUp, Wand2, ListFilter, Menu, Upload, User, Mail, Phone, Lock, Globe, BellRing,
-  Building2, Users, Trophy, MessageSquare, PieChart, Activity, Eye, Loader2, Copy, Newspaper, Bot, Send, BellOff, Trash2, CreditCard
+  Building2, Users, Trophy, MessageSquare, PieChart, Activity, Eye, Loader2, Copy, Newspaper, Bot, Send, BellOff, Trash2, CreditCard, RefreshCcw
 } from 'lucide-react';
 import { scraperService, InstagramPost } from "../lib/scraperService";
 import { supabase } from "../lib/supabase";
@@ -20,6 +20,20 @@ import { BillingView } from './BillingView';
 import { favoriteJobsService, FavoriteJob, NewFavoriteJob } from "../lib/favoriteJobs";
 import { extractTextFromPDF } from '../lib/pdfParser';
 import { ProjectTableView } from './ProjectTableView';
+
+// OpenRouter / OpenAI auto-routing helpers
+const _AI_KEY = import.meta.env.VITE_OPENAI_API_KEY || '';
+const _isOpenRouter = _AI_KEY.startsWith('sk-or-');
+const getAiEndpoint = () => _isOpenRouter ? 'https://openrouter.ai/api/v1/chat/completions' : 'https://api.openai.com/v1/chat/completions';
+const getAiHeaders = (apiKey: string) => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${apiKey}`,
+  ...(_isOpenRouter ? { 'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : 'https://jobsagent.local', 'X-Title': 'JobsAgent' } : {})
+});
+const resolveModel = (m: string) => {
+  if (_isOpenRouter) return m.includes('/') ? m : `openai/${m}`;
+  return m.includes('/') ? m.split('/').pop()! : m;
+};
 
 const exportToWord = (content: string, filename: string) => {
   const preHtml = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Export HTML To Doc</title></head><body style='font-family: Arial, sans-serif;'>";
@@ -253,7 +267,7 @@ interface Notification {
   unread: boolean;
 }
 
-type DashboardView = 'dashboard' | 'search' | 'detail' | 'applications' | 'scanner' | 'settings' | 'notifications' | 'cv' | 'project-tracker' | 'cover-letter' | 'cpns-bumn' | 'ai-chat' | 'cv-builder' | 'pricing' | 'salary-checker' | 'billing';
+type DashboardView = 'dashboard' | 'search' | 'detail' | 'applications' | 'scanner' | 'settings' | 'notifications' | 'cv' | 'project-tracker' | 'cover-letter' | 'cpns-bumn' | 'ai-chat' | 'cv-builder' | 'pricing' | 'salary-checker' | 'billing' | 'cv-match';
 
 // --- MOCK DATA ---
 const MOCK_JOBS: Job[] = [
@@ -968,7 +982,8 @@ const JobSearch: React.FC<{
   unreadCount?: number;
   isSplitView?: boolean;
   selectedJob?: Job | null;
-}> = ({ onJobClick, onViewChange, user, userProfile, unreadCount = 0, isSplitView = false, selectedJob }) => {
+  initialMode?: 'default' | 'cv-match';
+}> = ({ onJobClick, onViewChange, user, userProfile, unreadCount = 0, isSplitView = false, selectedJob, initialMode = 'default' }) => {
   const [viewState, setViewState] = useState<'empty' | 'results' | 'loading'>('empty');
   const [searchInput, setSearchInput] = useState("");
   const [locationInput, setLocationInput] = useState("");
@@ -977,6 +992,10 @@ const JobSearch: React.FC<{
   const [sortBy, setSortBy] = useState<'terbaru' | 'rekomendasi'>('terbaru');
   const [activeFilters, setActiveFilters] = useState<{ keyword: string, location: string }>({ keyword: '', location: '' });
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['LinkedIn', 'JobStreet']);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+  const [filteredLocationSuggestions, setFilteredLocationSuggestions] = useState<string[]>([]);
 
   const availablePlatforms = [
     { id: 'LinkedIn', label: 'LinkedIn', icon: '💼', color: 'bg-blue-600' },
@@ -991,16 +1010,64 @@ const JobSearch: React.FC<{
     );
   };
 
+  useEffect(() => {
+    if (initialMode === 'cv-match' && userProfile) {
+      handleCVSearch();
+    }
+  }, [initialMode]);
+
   const popularSearches = ["Software Engineer", "Data Analyst", "Safety Officer", "Marketing", "Accountant", "UI/UX Designer"];
   const popularLocations = ["Jakarta", "Bandung", "Surabaya", "Indonesia", "Remote"];
 
+  const jobSuggestionsList = [
+    "Safety Engineer", "Safety Officer", "HSE Coordinator", "Health and Safety",
+    "Software Engineer", "Frontend Developer", "Backend Developer", "Fullstack Developer",
+    "UI/UX Designer", "Product Manager", "Data Analyst", "Data Scientist", "Quality Assurance",
+    "Graphic Designer", "Marketing Specialist", "Digital Marketing", "HR Manager",
+    "Project Manager", "DevOps Engineer", "Accountant", "Business Analyst", "Admin", "Customer Service"
+  ];
+
+  const locationSuggestionsList = [
+    "Jakarta", "Jakarta Selatan", "Jakarta Pusat", "Jakarta Barat", "Jakarta Timur", "Jakarta Utara",
+    "Bandung", "Surabaya", "Semarang", "Yogyakarta", "Bali", "Denpasar", "Medan", "Makassar",
+    "Batam", "Tangerang", "Tangerang Selatan", "Depok", "Bekasi", "Bogor", "Cirebon", "Malang",
+    "Balikpapan", "Samarinda", "Remote", "Hybrid", "Indonesia"
+  ];
+
   const handleSearchChange = (val: string) => {
     setSearchInput(val);
-    // Don't clear results when user is typing/clearing — keep previous results visible
+    if (val.trim().length > 0) {
+      const filtered = jobSuggestionsList.filter(job =>
+        job.toLowerCase().includes(val.toLowerCase())
+      );
+      setFilteredSuggestions(filtered);
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  const selectSuggestion = (suggestion: string) => {
+    setSearchInput(suggestion);
+    setShowSuggestions(false);
   };
 
   const handleLocationChange = (val: string) => {
     setLocationInput(val);
+    if (val.trim().length > 0) {
+      const filtered = locationSuggestionsList.filter(loc =>
+        loc.toLowerCase().includes(val.toLowerCase())
+      );
+      setFilteredLocationSuggestions(filtered);
+      setShowLocationSuggestions(true);
+    } else {
+      setShowLocationSuggestions(false);
+    }
+  };
+
+  const selectLocationSuggestion = (suggestion: string) => {
+    setLocationInput(suggestion);
+    setShowLocationSuggestions(false);
   };
 
   const removeFilter = (type: 'keyword' | 'location') => {
@@ -1264,7 +1331,23 @@ const JobSearch: React.FC<{
                     value={searchInput}
                     onChange={(e) => handleSearchChange(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    onFocus={() => searchInput.trim().length > 0 && setShowSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                   />
+                  {showSuggestions && filteredSuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 shadow-xl rounded-xl z-50 max-h-60 overflow-y-auto">
+                      {filteredSuggestions.map((suggestion, idx) => (
+                        <div
+                          key={idx}
+                          className="px-4 py-3 hover:bg-brand-50 cursor-pointer text-slate-700 hover:text-brand-600 transition-colors border-b border-slate-50 last:border-0 flex items-center gap-2"
+                          onClick={() => selectSuggestion(suggestion)}
+                        >
+                          <Search size={14} className="text-slate-400" />
+                          {suggestion}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1278,7 +1361,23 @@ const JobSearch: React.FC<{
                     value={locationInput}
                     onChange={(e) => handleLocationChange(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    onFocus={() => locationInput.trim().length > 0 && setShowLocationSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 200)}
                   />
+                  {showLocationSuggestions && filteredLocationSuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 shadow-xl rounded-xl z-50 max-h-60 overflow-y-auto">
+                      {filteredLocationSuggestions.map((suggestion, idx) => (
+                        <div
+                          key={idx}
+                          className="px-4 py-3 hover:bg-brand-50 cursor-pointer text-slate-700 hover:text-brand-600 transition-colors border-b border-slate-50 last:border-0 flex items-center gap-2"
+                          onClick={() => selectLocationSuggestion(suggestion)}
+                        >
+                          <MapPin size={14} className="text-slate-400" />
+                          {suggestion}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1542,7 +1641,7 @@ const JobSearch: React.FC<{
               {/* CHATGPT STYLE GIANT SEARCH BAR */}
               <div className="w-full max-w-[760px] bg-white rounded-[32px] p-2.5 sm:p-3 shadow-[0_40px_80px_-20px_rgba(15,23,42,0.15)] border border-slate-200/50 focus-within:border-brand-500 focus-within:ring-[10px] focus-within:ring-brand-500/5 transition-all duration-500 relative z-30 flex flex-col sm:flex-row mb-16 animate-fade-in-up delay-200 group">
 
-                <div className="flex-[1.4] flex items-center px-6 h-[68px] sm:h-[80px] border-b sm:border-b-0 sm:border-r border-slate-100/80 transition-colors group-focus-within:border-slate-200">
+                <div className="flex-[1.4] flex items-center px-6 h-[68px] sm:h-[80px] border-b sm:border-b-0 sm:border-r border-slate-100/80 transition-colors group-focus-within:border-slate-200 relative">
                   <Search className="text-brand-500 shrink-0 mr-4" size={24} strokeWidth={2.5} />
                   <input
                     type="text"
@@ -1551,10 +1650,26 @@ const JobSearch: React.FC<{
                     value={searchInput}
                     onChange={(e) => handleSearchChange(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    onFocus={() => searchInput.trim().length > 0 && setShowSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                   />
+                  {showSuggestions && filteredSuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-3 bg-white border border-slate-200 shadow-2xl rounded-2xl z-50 max-h-64 overflow-y-auto overflow-hidden animate-fade-in-up">
+                      {filteredSuggestions.map((suggestion, idx) => (
+                        <div
+                          key={idx}
+                          className="px-6 py-4 hover:bg-brand-50 cursor-pointer font-semibold text-slate-700 hover:text-brand-700 transition-all border-b border-slate-50 last:border-0 flex items-center gap-3"
+                          onClick={() => selectSuggestion(suggestion)}
+                        >
+                          <Search size={16} className="text-brand-400" />
+                          {suggestion}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex-1 flex items-center px-6 h-[68px] sm:h-[80px]">
+                <div className="flex-1 flex items-center px-6 h-[68px] sm:h-[80px] relative">
                   <MapPin className="text-slate-400 shrink-0 mr-4" size={22} />
                   <input
                     type="text"
@@ -1563,7 +1678,23 @@ const JobSearch: React.FC<{
                     value={locationInput}
                     onChange={(e) => handleLocationChange(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    onFocus={() => locationInput.trim().length > 0 && setShowLocationSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 200)}
                   />
+                  {showLocationSuggestions && filteredLocationSuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-3 bg-white border border-slate-200 shadow-2xl rounded-2xl z-50 max-h-64 overflow-y-auto overflow-hidden animate-fade-in-up">
+                      {filteredLocationSuggestions.map((suggestion, idx) => (
+                        <div
+                          key={idx}
+                          className="px-6 py-4 hover:bg-brand-50 cursor-pointer font-semibold text-slate-700 hover:text-brand-700 transition-all border-b border-slate-50 last:border-0 flex items-center gap-3"
+                          onClick={() => selectLocationSuggestion(suggestion)}
+                        >
+                          <MapPin size={16} className="text-brand-400" />
+                          {suggestion}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <button
@@ -1658,14 +1789,11 @@ const JobDetail: React.FC<{ job: Job; onBack: () => void; userProfile: UserProfi
         userContext = `Applicant Identity:\nName: ${user.full_name || '[Applicant Name]'}\nEmail: ${user.email || '[Applicant Email]'}`;
       }
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch(getAiEndpoint(), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
+        headers: getAiHeaders(apiKey),
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: resolveModel('anthropic/claude-3.5-sonnet'),
           temperature: 0.7,
           messages: [
             {
@@ -1732,14 +1860,11 @@ const JobDetail: React.FC<{ job: Job; onBack: () => void; userProfile: UserProfi
         }
       }
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch(getAiEndpoint(), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
+        headers: getAiHeaders(apiKey),
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: resolveModel('anthropic/claude-3.5-sonnet'),
           temperature: 0.7,
           messages: [
             {
@@ -1777,14 +1902,11 @@ const JobDetail: React.FC<{ job: Job; onBack: () => void; userProfile: UserProfi
       const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
       if (!apiKey) throw new Error("OpenAI API Key is missing");
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch(getAiEndpoint(), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
+        headers: getAiHeaders(apiKey),
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: resolveModel('gpt-4o-mini'),
           temperature: 0.3,
           messages: [
             {
@@ -2306,60 +2428,70 @@ const ATSScanner: React.FC<{ unreadCount?: number; userProfile?: UserProfile | n
     setResult(null);
     setError('');
     try {
-      // Enhanced HR Critique Analysis
+      // HYBRID METHOD: AI extracts facts → JS calculates score
       const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
       if (!apiKey) throw new Error("OpenAI API Key tidak ditemukan.");
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch(getAiEndpoint(), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
+        headers: getAiHeaders(apiKey),
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          temperature: 0.2,
+          model: resolveModel('gpt-4o-mini'),
+          temperature: 0.1, // Very low for consistent fact extraction
           response_format: { type: 'json_object' },
           messages: [
             {
               role: 'system',
-              content: `Anda adalah seorang HR Manager Senior berpengalaman 15+ tahun di perusahaan multinasional.
-Anda sangat kritis dalam menilai CV — seperti seorang HR profesional yang menyeleksi ratusan CV per minggu.
+              content: `Anda adalah CV Fact Extractor. Tugas Anda HANYA mengekstrak FAKTA dari CV, BUKAN menilai atau memberikan skor.
 
-Tugas Anda:
-1. Berikan skor ATS (0-100) — skor ini HARUS realistis, jangan terlalu murah hati
-2. Beri kritik JUJUR dan TAJAM seperti seorang HR sungguhan — sebutkan kelemahan dengan tegas
-3. Berikan saran perbaikan yang KONKRET dan ACTIONABLE (bukan nasihat umum)
-
-Gaya Anda: profesional tapi blak-blakan. Jika CV buruk, katakan buruk. Jika bagus, apresiasi tapi tetap temukan yang bisa diperbaiki.
-
-PENTING: Semua respons HARUS dalam Bahasa Indonesia.
-
-Return JSON:
+Analisis CV dan kembalikan JSON berikut dengan AKURAT:
 {
-  "score": number (0-100),
-  "verdict": "string (1 kalimat penilaian tajam dari HR, contoh: 'CV ini terlalu generik dan tidak akan lolos 90% ATS perusahaan top.')",
-  "summary": "string (ringkasan 2-3 kalimat analisis keseluruhan dalam perspektif HR)",
-  "strengths": ["string (hal positif dari CV, 2-3 poin)"],
+  "facts": {
+    "has_contact_info": boolean (ada nama, email, atau telepon?),
+    "has_professional_summary": boolean (ada ringkasan/summary profil?),
+    "has_quantified_achievements": boolean (ada pencapaian dengan angka, misalnya "meningkatkan 20%"?),
+    "quantified_count": number (berapa banyak pencapaian yang dikuantifikasi?),
+    "skills_found": ["string"] (daftar skill yang ditemukan),
+    "skills_count": number,
+    "experience_entries": number (berapa banyak entri pengalaman kerja?),
+    "total_experience_years": number (estimasi total tahun pengalaman),
+    "education_entries": number (berapa banyak entri pendidikan?),
+    "has_certifications": boolean,
+    "certifications_count": number,
+    "has_references": boolean,
+    "formatting_issues": ["string"] (masalah format yang ditemukan: tabel, gambar, header ganda, dll),
+    "uses_action_verbs": boolean (menggunakan kata kerja aktif seperti "Memimpin", "Mengembangkan"?),
+    "section_completeness": {
+      "contact": boolean,
+      "summary": boolean,
+      "experience": boolean,
+      "education": boolean,
+      "skills": boolean,
+      "references": boolean
+    }
+  },
   "hr_critique": [
     {
       "category": "Format" | "Konten" | "Keywords" | "Pengalaman" | "Struktur" | "Skill" | "Profesionalisme",
       "severity": "critical" | "warning" | "suggestion",
-      "critique": "string (kritik tajam seperti HR bicara langsung ke pelamar)",
-      "action": "string (tindakan perbaikan spesifik yang harus dilakukan, bukan umum)",
+      "critique": "string (kritik spesifik dalam Bahasa Indonesia)",
+      "action": "string (tindakan perbaikan konkret)",
       "impact": "High" | "Medium" | "Low",
-      "example": "string (contoh konkret bagaimana memperbaikinya, opsional)"
+      "example": "string (contoh perbaikan, opsional)"
     }
   ],
-  "ats_keywords_missing": ["string (keyword penting yang sebaiknya ada di CV)"],
-  "overall_recommendation": "string (rekomendasi akhir dari HR, apakah CV ini layak submit atau perlu revisi dulu)"
+  "ats_keywords_missing": ["string (keyword penting yang sebaiknya ada)"],
+  "strengths": ["string (2-3 hal positif dari CV)"]
 }
 
-Be very strict and detailed. A typical CV should score between 40-70. Only truly excellent CVs get 80+.`
+PENTING: 
+- Jangan berikan skor. Hanya ekstrak fakta.
+- Semua teks kritik dan saran HARUS dalam Bahasa Indonesia.
+- Jadilah sangat detail dan akurat dalam mengekstrak fakta.`
             },
             {
               role: 'user',
-              content: `Tolong review CV berikut sebagai HR Manager:\n\n${cvText}`
+              content: `Ekstrak fakta dari CV berikut:\n\n${cvText}`
             }
           ]
         }),
@@ -2367,8 +2499,88 @@ Be very strict and detailed. A typical CV should score between 40-70. Only truly
 
       if (!response.ok) throw new Error(`API error: ${response.status}`);
       const data = await response.json();
-      const parsed = JSON.parse(data.choices[0].message.content);
-      setResult(parsed);
+      const extracted = JSON.parse(data.choices[0].message.content);
+      const facts = extracted.facts;
+
+      // ============================================
+      // HYBRID SCORING: JavaScript Formula (Deterministic)
+      // ============================================
+      let score = 0;
+      const breakdown: { category: string; points: number; maxPoints: number; detail: string }[] = [];
+
+      // 1. Contact Info (10 points)
+      const contactPts = facts.has_contact_info ? 10 : 0;
+      score += contactPts;
+      breakdown.push({ category: 'Informasi Kontak', points: contactPts, maxPoints: 10, detail: facts.has_contact_info ? 'Nama/Email/Telepon ditemukan' : 'Tidak ada informasi kontak' });
+
+      // 2. Professional Summary (10 points)
+      const summaryPts = facts.has_professional_summary ? 10 : 0;
+      score += summaryPts;
+      breakdown.push({ category: 'Ringkasan Profesional', points: summaryPts, maxPoints: 10, detail: facts.has_professional_summary ? 'Ada ringkasan profil' : 'Tidak ada ringkasan/summary' });
+
+      // 3. Quantified Achievements (15 points)
+      const quantPts = facts.has_quantified_achievements ? Math.min(15, (facts.quantified_count || 1) * 5) : 0;
+      score += quantPts;
+      breakdown.push({ category: 'Pencapaian Terukur', points: quantPts, maxPoints: 15, detail: facts.has_quantified_achievements ? `${facts.quantified_count || 1} pencapaian dengan angka` : 'Tidak ada pencapaian yang dikuantifikasi' });
+
+      // 4. Work Experience (20 points: 5 per entry, max 20)
+      const expPts = Math.min(20, (facts.experience_entries || 0) * 5);
+      score += expPts;
+      breakdown.push({ category: 'Pengalaman Kerja', points: expPts, maxPoints: 20, detail: `${facts.experience_entries || 0} entri pengalaman (${facts.total_experience_years || 0} tahun)` });
+
+      // 5. Education (10 points)
+      const eduPts = (facts.education_entries || 0) > 0 ? 10 : 0;
+      score += eduPts;
+      breakdown.push({ category: 'Pendidikan', points: eduPts, maxPoints: 10, detail: `${facts.education_entries || 0} entri pendidikan` });
+
+      // 6. Skills (15 points: based on count)
+      const skillCount = facts.skills_count || facts.skills_found?.length || 0;
+      const skillPts = Math.min(15, skillCount >= 8 ? 15 : skillCount >= 5 ? 10 : skillCount >= 3 ? 7 : skillCount > 0 ? 4 : 0);
+      score += skillPts;
+      breakdown.push({ category: 'Skills/Keahlian', points: skillPts, maxPoints: 15, detail: `${skillCount} skill ditemukan` });
+
+      // 7. ATS-Friendly Format (10 points, deducted per issue)
+      const formatIssues = facts.formatting_issues?.length || 0;
+      const formatPts = Math.max(0, 10 - (formatIssues * 3));
+      score += formatPts;
+      breakdown.push({ category: 'Format ATS-Friendly', points: formatPts, maxPoints: 10, detail: formatIssues > 0 ? `${formatIssues} masalah format` : 'Format bersih dan ATS-compatible' });
+
+      // 8. Certifications (5 points)
+      const certPts = facts.has_certifications ? 5 : 0;
+      score += certPts;
+      breakdown.push({ category: 'Sertifikasi', points: certPts, maxPoints: 5, detail: facts.has_certifications ? `${facts.certifications_count || 1} sertifikasi` : 'Tidak ada sertifikasi' });
+
+      // 9. References (5 points)
+      const refPts = facts.has_references ? 5 : 0;
+      score += refPts;
+      breakdown.push({ category: 'Referensi', points: refPts, maxPoints: 5, detail: facts.has_references ? 'Referensi tersedia' : 'Tidak ada referensi' });
+
+      // 10. Action Verbs Bonus (up to +5 bonus capped at 100)
+      const actionPts = facts.uses_action_verbs ? 5 : 0;
+      score = Math.min(100, score + actionPts);
+
+      // Generate verdict based on score
+      let verdict = '';
+      if (score >= 85) verdict = 'CV ini sangat kuat dan siap bersaing di pasar kerja.';
+      else if (score >= 70) verdict = 'CV cukup baik, namun masih ada beberapa area yang perlu dipoles.';
+      else if (score >= 50) verdict = 'CV ini membutuhkan perbaikan signifikan sebelum dikirim ke perusahaan target.';
+      else verdict = 'CV ini perlu dirombak total — terlalu banyak elemen penting yang hilang.';
+
+      // Compose final result (compatible with existing UI)
+      const hybridResult = {
+        score,
+        verdict,
+        summary: `Skor ATS: ${score}/100. ${verdict} Breakdown: ${breakdown.map(b => `${b.category} ${b.points}/${b.maxPoints}`).join(', ')}.`,
+        strengths: extracted.strengths || [],
+        hr_critique: extracted.hr_critique || [],
+        ats_keywords_missing: extracted.ats_keywords_missing || [],
+        overall_recommendation: score >= 70 ? 'CV layak dikirim, namun pertimbangkan perbaikan di area yang lemah.' : 'Sebaiknya revisi CV terlebih dahulu sebelum mengirimkannya.',
+        // NEW: hybrid scoring breakdown for UI
+        score_breakdown: breakdown,
+        extracted_facts: facts
+      };
+
+      setResult(hybridResult);
     } catch (e: any) {
       console.error("Error analyzing CV:", e);
       setError(e.message || "Gagal menganalisis CV. Silakan coba lagi.");
@@ -2410,14 +2622,11 @@ Be very strict and detailed. A typical CV should score between 40-70. Only truly
 
       const missingKeywords = result.ats_keywords_missing?.join(', ') || '';
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch(getAiEndpoint(), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
+        headers: getAiHeaders(apiKey),
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: resolveModel('anthropic/claude-3.5-sonnet'),
           temperature: 0.15,
           response_format: { type: 'json_object' },
           messages: [
@@ -3144,18 +3353,21 @@ const SettingsView: React.FC<{ user?: { full_name?: string; email?: string }; un
                   onClick={() => {
                     if (window.confirm('Yakin ingin menghapus seluruh data CV dan Profil Anda saat ini?')) {
                       clearProfile?.();
-                      if (onProfileUpdate) onProfileUpdate({
-                        skills: [],
-                        experience_years: 0,
-                        experience_summary: '',
-                        work_experience: [],
-                        education: '',
-                        education_list: [],
-                        references: [],
-                        certifications: [],
-                        preferred_roles: [],
-                        raw_cv: ''
-                      } as unknown as UserProfile); // Force empty
+                      if (onProfileUpdate) {
+                        onProfileUpdate({
+                          skills: [],
+                          experience_years: 0,
+                          experience_summary: '',
+                          work_experience: [],
+                          education: '',
+                          education_list: [],
+                          references: [],
+                          certifications: [],
+                          preferred_roles: [],
+                          raw_cv: '',
+                          subscriptionPlan: userProfile?.subscriptionPlan // Preserve plan!
+                        } as unknown as UserProfile);
+                      }
                     }
                   }}
                   className="w-full md:w-auto px-5 py-3 bg-white border border-red-200 text-red-600 font-bold text-sm rounded-xl hover:bg-red-50 hover:border-red-300 transition-colors flex justify-center items-center gap-2"
@@ -3660,27 +3872,80 @@ const CoverLetterView: React.FC<{ unreadCount: number; userProfile: UserProfile 
 };
 
 const NewsChatView: React.FC<{ userProfile?: UserProfile | null }> = ({ userProfile }) => {
-  const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string, sources?: any[], timestamp?: Date }[]>([]);
+  const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string, images?: string[], sources?: any[], timestamp?: Date }[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
-  const [conversations, setConversations] = useState<{ id: string, title: string, date: Date }[]>([]);
-  const [activeConvId, setActiveConvId] = useState<string>('');
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
+
+  interface ChatSession {
+    id: string;
+    title: string;
+    date: Date;
+    messages: typeof messages;
+  }
+  const [conversations, setConversations] = useState<ChatSession[]>(() => {
+    const saved = localStorage.getItem('jobsagent_chat_history');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return parsed.map((c: any) => ({ ...c, date: new Date(c.date) }));
+      } catch (e) { return []; }
+    }
+    return [];
+  });
+
+  const [activeConvId, setActiveConvId] = useState<string>(() => Date.now().toString());
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [salaryEstimation, setSalaryEstimation] = useState<SalaryEstimateResult | null>(null);
   const chatEndRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem('jobsagent_chat_history', JSON.stringify(conversations.slice(0, 20)));
+  }, [conversations]);
+
+  useEffect(() => {
+    if (messages.length > 0 && activeConvId) {
+      const title = messages.find(m => m.role === 'user')?.content.slice(0, 30) || 'Chat Baru';
+      setConversations(prev => {
+        const existingIdx = prev.findIndex(c => c.id === activeConvId);
+        if (existingIdx >= 0) {
+          const newConvs = [...prev];
+          newConvs[existingIdx] = { ...newConvs[existingIdx], messages, date: new Date() };
+          return newConvs;
+        } else {
+          return [{ id: activeConvId, title, date: new Date(), messages }, ...prev];
+        }
+      });
+    }
+  }, [messages, activeConvId]);
 
   const scrollToBottom = () => {
     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
   };
 
   const startNewChat = () => {
-    if (messages.length > 0) {
-      const title = messages.find(m => m.role === 'user')?.content.slice(0, 40) || 'Chat Baru';
-      setConversations(prev => [{ id: activeConvId || Date.now().toString(), title, date: new Date() }, ...prev].slice(0, 10));
-    }
     setMessages([]);
     setActiveConvId(Date.now().toString());
     setChatInput('');
+  };
+
+  const loadChat = (id: string) => {
+    const target = conversations.find(c => c.id === id);
+    if (target) {
+      setMessages(target.messages);
+      setActiveConvId(target.id);
+    }
+  };
+
+  const deleteChat = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setConversations(prev => prev.filter(c => c.id !== id));
+    if (activeConvId === id) {
+      setMessages([]);
+      setActiveConvId(Date.now().toString());
+      setChatInput('');
+    }
   };
 
   // Automatically estimate salary in background for chat context
@@ -3697,6 +3962,38 @@ const NewsChatView: React.FC<{ userProfile?: UserProfile | null }> = ({ userProf
       getSalary();
     }
   }, [userProfile]);
+
+  // Auto-fetch CPNS/BUMN news on new chat
+  useEffect(() => {
+    if (messages.length === 0) {
+      const fetchInitialNews = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('scraper_results')
+            .select('*')
+            .in('platform', ['cpns', 'bumn'])
+            .order('created_at', { ascending: false })
+            .limit(2);
+
+          if (!error && data && data.length > 0) {
+            const newsItems = data.map((d: any) => `- **${d.title}**: ${d.content?.substring(0, 120)}...`).join('\n');
+            const welcomeMsg = `Halo! 👋 Saya Asisten Karir & Rekruter pribadi Anda.\n\nSekilas info rekrutmen terbaru hari ini:\n${newsItems}\n\nKirimkan foto CV/Portofolio Anda untuk saya *review*, atau tanyakan tips seputar karir dan wawancara!`;
+
+            setMessages([{
+              role: 'assistant',
+              content: welcomeMsg,
+              sources: data.map((d: any) => ({ title: d.title, url: d.url, type: 'news' })),
+              timestamp: new Date()
+            }]);
+          }
+        } catch (err) {
+          console.error("Auto-fetch news error:", err);
+        }
+      };
+
+      fetchInitialNews();
+    }
+  }, [messages.length, activeConvId]);
 
   const [debugLog, setDebugLog] = useState<string>('');
 
@@ -3918,89 +4215,120 @@ const NewsChatView: React.FC<{ userProfile?: UserProfile | null }> = ({ userProf
     }));
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Ukuran gambar maksimal 5MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAttachedImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeAttachedImage = () => {
+    setAttachedImage(null);
+  };
+
   const handleChatSubmit = async (customQuery?: string) => {
     const q = customQuery || chatInput.trim();
-    if (!q) return;
+    if (!q && !attachedImage) return;
 
-    const userMsg = { role: 'user' as const, content: q, timestamp: new Date() };
+    const userMsg = { role: 'user' as const, content: q || "Tolong analisis gambar ini.", images: attachedImage ? [attachedImage] : undefined, timestamp: new Date() };
     setMessages(prev => [...prev, userMsg]);
     if (!customQuery) setChatInput('');
+    const currentAttachedImage = attachedImage;
+    setAttachedImage(null);
     setChatLoading(true);
     setDebugLog('Started request...');
     scrollToBottom();
 
     try {
       // Step 1: Fetch RAG context
-      const ragContext = await fetchRAGContext(q);
+      const ragContext = await fetchRAGContext(q || "lowongan kerja");
 
       const contextText = ragContext.length > 0
         ? ragContext.map((c: any, i: number) => `[Sumber ${i + 1}: ${c.title} | Relevansi: ${c.score}]\n${c.content}`).join('\n\n---\n\n')
         : 'Tidak ada data spesifik ditemukan di database untuk query ini.';
 
       // Step 2: Build conversation history for context
-      const historyMessages = messages.slice(-8).map(m => ({
-        role: m.role,
-        content: m.content
-      }));
+      const historyMessages = messages.slice(-8).map(m => {
+        if (m.images && m.images.length > 0) {
+          return {
+            role: m.role,
+            content: [
+              { type: "text", text: m.content },
+              ...m.images.map(img => ({ type: "image_url", image_url: { url: img } }))
+            ]
+          };
+        }
+        return {
+          role: m.role,
+          content: m.content
+        };
+      });
+
+      // Prepare current message content
+      const currentContent = currentAttachedImage ? [
+        { type: "text", text: q || "Tolong analisis gambar ini." },
+        { type: "image_url", image_url: { url: currentAttachedImage } }
+      ] : q;
 
       // Step 3: Call OpenAI with RAG context
       setDebugLog('Calling OpenAI API...');
       const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
       if (!apiKey) throw new Error("API key not found");
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch(getAiEndpoint(), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
+        headers: getAiHeaders(apiKey),
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: resolveModel('openai/gpt-4o-mini'),
           temperature: 0.3,
           messages: [
             {
               role: 'system',
-              content: `Kamu adalah "Jobs Agent AI" — teman karir pintar yang akrab dan menyenangkan.
+              content: `Kamu adalah "Jobs Agent AI" — Asisten Karir dan Senior HR Rekruter yang cerdas, empatik, dan sangat profesional.
 
-KEPRIBADIANMU:
-- Bicara seperti teman yang paham dunia kerja, bukan robot formal
-- Enthusiastik dan supportive, seperti career coach yang ramah
-- Jika user meminta rekomendasi, berikan rekomendasi yang spesifik dan personal
-- Gunakan emoji sesekali untuk membuat percakapan lebih hidup
+KEPRIBADIANMU (HR PROFESSIONAL):
+- Bertindak seperti Senior HR / Career Coach berpengalaman
+- Beri feedback jujur namun sangat membangun terkait karir, CV, dan wawancara
+- Gunakan nada bicara profesional tapi hangat dan mendukung (seperti mentor)
+- Jika menganalisis CV/gambar, berikan poin-poin spesifik apa yang bagus dan apa yang perlu diubah
+- Gunakan emoji secukupnya agar tidak kaku
+
+KEMAMPUAN VISION (ANALISIS GAMBAR):
+- Jika user mengunggah gambar (seperti screenshot lowongan kerja, foto CV, portofolio, dsb), bacalah dengan seksama.
+- Berikan insight mendalam berdasarkan informasi yang terbaca dari gambar tersebut.
 
 DATABASE YANG KAMU AKSES (via RAG):
 Kamu membaca ${ragContext.length} chunk data yang paling relevan dari:
 - Database lowongan kerja (LinkedIn, Jobstreet, dll)
-- Artikel berita CPNS & BUMN terbaru
-- Info rekrutmen dan tips karir
+- Berita CPNS & BUMN terbaru
 
 PROFIL USER:
 ${userProfile?.raw_cv ? `👤 Nama: ${userProfile.full_name || 'Tidak diketahui'}
 🛠 Skills: ${userProfile.skills?.join(', ') || 'Tidak disebutkan'}
 💼 Pengalaman: ${userProfile.experience_years} tahun - ${userProfile.experience_summary || 'Tidak disebutkan'}
 🎓 Pendidikan: ${userProfile.education || 'Tidak disebutkan'}
-📄 Ringkasan CV: ${userProfile.raw_cv.slice(0, 1000)}` : '⚠️ User belum upload CV. Sarankan untuk upload di menu Settings agar rekomendasi lebih tepat.'}
+📄 Ringkasan CV: ${userProfile.raw_cv.slice(0, 1000)}` : '⚠️ User belum upload CV di sistem.'}
 
 💰 ESTIMASI GAJI PASAR USER:
-${salaryEstimation ? `Median: Rp ${salaryEstimation.medianSalary.toLocaleString('id-ID')}
-Rentang: Rp ${salaryEstimation.minSalary.toLocaleString('id-ID')} - Rp ${salaryEstimation.maxSalary.toLocaleString('id-ID')}
-Analisis AI: ${salaryEstimation.analysis.map(a => `${a.factor}: ${a.description}`).join('; ')}` : 'Gaji belum dianalisis (Profil belum lengkap).'}
+${salaryEstimation ? `Median: Rp ${salaryEstimation.medianSalary.toLocaleString('id-ID')}` : 'Belum dianalisis.'}
 
-DATA KONTEKS (dari RAG chunking — diurutkan berdasarkan relevansi):
+DATA KONTEKS LOWONGAN/BERITA (Dari database internal):
 ${contextText}
 
 CARA MENJAWAB:
-1. **Gunakan data konteks** sebagai sumber utama jawaban — ini adalah data REAL dari database
-2. Jika data relevan ditemukan, sebutkan sumber: [Sumber 1], [Sumber 2], dst
-3. Untuk rekomendasi lowongan: **cocokkan skill user dengan requirement** di data lowongan
-4. Jika ditanya "lowongan yang cocok", lihat CV user → cari match di data lowongan → rekomendasikan yang paling cocok
-5. Untuk info CPNS/BUMN: gunakan data artikel terbaru, sebutkan tanggal dan sumber
-6. **Format yang rapi**: gunakan bullet points, bold untuk poin penting, paragraf pendek
-7. Jika data tidak cukup, jujur katakan dan beri saran kemana mencari
-8. Jangan pernah mengarang data — lebih baik bilang "Saya belum punya info itu" daripada asal jawab`
+1. Jika ditanya info lowongan/CPNS, gunakan data konteks sebagai sumber kebenaran (sebutkan [Sumber X])
+2. Jika mengevaluasi profil user, bertindaklah layaknya Rekruter profesional menilai kandidat`
             },
             ...historyMessages,
-            { role: 'user', content: q }
+            { role: 'user', content: currentContent }
           ]
         }),
       });
@@ -4108,168 +4436,257 @@ CARA MENJAWAB:
   };
 
   return (
-    <div className="animate-fade-in h-[calc(100vh-80px)] flex flex-col max-w-4xl mx-auto">
-      {/* Top Bar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-brand-500 to-brand-300 rounded-xl flex items-center justify-center shadow-md">
-            <Sparkles size={16} className="text-white" />
+    <div className="flex h-[calc(100vh-80px)] overflow-hidden w-full bg-white relative border-t border-slate-200 font-sans">
+
+      {/* Sidebar for Chat History */}
+      <div className={`border-r border-slate-100 bg-[#F9F9F8] flex flex-col hidden md:flex h-full flex-shrink-0 z-20 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-[260px]' : 'w-0 border-transparent overflow-hidden'}`}>
+        <div className="w-[260px] flex flex-col h-full">
+          <div className="p-4 flex items-center justify-between mt-2">
+            <span className="font-semibold text-slate-700 text-[13px] tracking-wide ml-2">Riwayat Obrolan</span>
+            <button onClick={startNewChat} title="Chat Baru" className="p-1.5 text-slate-500 rounded-md hover:bg-slate-200/50 transition-all">
+              <Plus size={18} />
+            </button>
           </div>
-          <div>
-            <h2 className="text-sm font-bold text-slate-900">Jobs Agent AI</h2>
-            <p className="text-[10px] text-slate-400 font-medium">RAG · LinkedIn · CPNS · BUMN</p>
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-0.5">
+            {conversations.length === 0 ? (
+              <div className="text-center text-xs text-slate-400 font-medium mt-10">Belum ada history.</div>
+            ) : (
+              conversations.map(conv => (
+                <button
+                  key={conv.id}
+                  onClick={() => loadChat(conv.id)}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-[13px] transition-all focus:outline-none flex flex-row items-center justify-between gap-2 group ${activeConvId === conv.id ? 'bg-[#EAEAE5] text-slate-900 font-medium' : 'hover:bg-[#EAEAE5]/60 text-slate-600'}`}
+                >
+                  <span className="truncate flex-1 leading-relaxed">{conv.title}</span>
+                  <div
+                    onClick={(e) => deleteChat(conv.id, e)}
+                    title="Hapus obrolan"
+                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-300/50 rounded text-slate-400 hover:text-red-500 transition-all shrink-0"
+                  >
+                    <Trash2 size={13} />
+                  </div>
+                </button>
+              ))
+            )}
           </div>
         </div>
-        <button
-          onClick={startNewChat}
-          className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-500 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all border border-slate-200 active:scale-95"
-        >
-          <Plus size={14} /> Chat Baru
-        </button>
       </div>
 
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar" id="chat-messages">
+      {/* Main Chat Area */}
+      <div className="flex-1 animate-fade-in flex flex-col overflow-hidden relative w-full h-full bg-white z-10">
+        {/* Top Bar - Minimalist Claude Style */}
+        <div className="flex items-center justify-between px-4 py-3 bg-transparent z-10 w-full max-w-3xl mx-auto absolute top-0 left-0 right-0">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-1.5 mr-1 text-slate-400 hover:text-slate-700 rounded-md hover:bg-slate-100 transition-all hidden md:flex"
+              title="Toggle Sidebar"
+            >
+              <Menu size={18} />
+            </button>
+            <span className="font-semibold text-slate-800 text-[15px]">Jobs Agent AI</span>
+            <span className="px-1.5 py-0.5 bg-[#F3F3EE] text-slate-600 rounded text-[10px] font-semibold border border-slate-200/50">Pro</span>
+          </div>
+          <button
+            onClick={startNewChat}
+            className="p-2 text-slate-400 hover:text-slate-700 rounded-lg transition-all"
+            title="New Chat"
+          >
+            <Plus size={18} />
+          </button>
+        </div>
+
         {messages.length === 0 ? (
-          /* Empty State — Gemini Style */
-          <div className="h-full flex flex-col items-center justify-center px-6 py-12">
-            <div className="w-16 h-16 bg-gradient-to-br from-brand-500 to-brand-300 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-brand-500/20 animate-fade-in">
-              <Sparkles size={28} className="text-white" />
+          /* Empty State — Claude Style */
+          <div className="flex-1 flex flex-col items-center justify-center px-4 md:px-12 w-full max-w-3xl mx-auto -mt-10">
+            <h2 className="text-3xl md:text-[32px] font-medium text-slate-800 mb-8 font-serif tracking-tight text-center">
+              Halo, saya Asisten HR & Rekruter Anda.
+            </h2>
+
+            {/* Main Input Box (Centered) */}
+            <div className="w-full relative flex-col bg-[#F4F4F4] hover:bg-[#EAEAEA] border border-transparent focus-within:bg-white focus-within:border-[#D1D1D1] focus-within:shadow-sm rounded-3xl transition-all flex items-end p-2 mb-6">
+
+              {attachedImage && (
+                <div className="w-full mb-2 flex items-center gap-3 animate-fade-in bg-white p-2 rounded-xl shadow-sm border border-slate-200 max-w-max self-start ml-2 relative group mt-2">
+                  <img src={attachedImage} alt="Attachment" className="h-16 w-auto rounded object-contain" />
+                  <button
+                    onClick={removeAttachedImage}
+                    className="absolute -top-2 -right-2 bg-white text-slate-400 hover:text-red-500 rounded-full border border-slate-200 shadow-sm p-1 transition-colors"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              )}
+
+              <div className="w-full flex items-end">
+                <input
+                  type="file"
+                  id="chat-image-upload-empty"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                />
+                <label htmlFor="chat-image-upload-empty" className="p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 rounded-full cursor-pointer transition-colors shrink-0">
+                  <Upload size={20} />
+                </label>
+                <textarea
+                  ref={inputRef}
+                  value={chatInput}
+                  onChange={handleInputChange}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Bantu saya review portofolio ini..."
+                  disabled={chatLoading}
+                  rows={1}
+                  className="flex-1 max-h-[200px] min-h-[24px] py-3.5 px-2 bg-transparent border-none resize-none focus:outline-none text-[15px] text-slate-800 placeholder:text-slate-500"
+                />
+                <button
+                  onClick={() => handleChatSubmit()}
+                  disabled={chatLoading || (!chatInput.trim() && !attachedImage)}
+                  className={`p-2.5 rounded-full transition-all mx-1 mb-1 shadow-sm shrink-0 ${chatInput.trim() || attachedImage ? 'bg-black text-white hover:bg-slate-800' : 'bg-white text-slate-300 pointer-events-none'}`}
+                >
+                  {chatLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} className="ml-0.5" />}
+                </button>
+              </div>
             </div>
-            <h3 className="text-2xl font-black text-slate-900 mb-2 tracking-tight animate-fade-in">Halo, ada yang bisa dibantu?</h3>
-            <p className="text-sm text-slate-400 font-medium mb-10 text-center max-w-md animate-fade-in">
-              Saya bisa membantu mencari lowongan kerja, info CPNS & BUMN, tips karir, dan banyak lagi.
-            </p>
-            <div className="grid grid-cols-2 gap-3 w-full max-w-lg animate-fade-in-up">
+
+            {/* Suggestions - Small Pills */}
+            <div className="flex flex-wrap items-center justify-center gap-2.5 w-full">
               {suggestedPrompts.map((prompt, i) => (
                 <button
                   key={i}
                   onClick={() => handleChatSubmit(prompt.desc)}
-                  className={`text-left p-4 rounded-2xl border bg-gradient-to-br ${prompt.color} hover:shadow-md transition-all hover:-translate-y-0.5 active:scale-[0.98] group`}
+                  className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white border border-slate-200 hover:bg-[#F9F9F8] text-[13px] font-medium text-slate-600 transition-all hover:border-slate-300 shadow-sm"
                 >
-                  <span className="text-xl mb-2 block">{prompt.icon}</span>
-                  <div className="text-xs font-bold text-slate-800 mb-0.5">{prompt.title}</div>
-                  <div className="text-[11px] text-slate-500 font-medium leading-snug">{prompt.desc}</div>
+                  <span className="opacity-80">{prompt.icon}</span>
+                  <span>{prompt.title}</span>
                 </button>
               ))}
             </div>
           </div>
         ) : (
-          <div className="py-6 px-4 md:px-8 space-y-5 max-w-4xl mx-auto">
-            {messages.map((m, i) => (
-              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
-                {/* AI Avatar — Left */}
-                {m.role === 'assistant' && (
-                  <div className="shrink-0 mr-3 mt-1">
-                    <div className="w-9 h-9 bg-gradient-to-br from-brand-500 to-brand-300 rounded-2xl flex items-center justify-center shadow-md">
-                      <Sparkles size={16} className="text-white" />
-                    </div>
-                  </div>
-                )}
-
-                <div className={`max-w-[75%] ${m.role === 'user' ? '' : ''}`}>
-                  {/* Message Bubble */}
-                  <div className={`p-4 md:p-5 text-[14px] leading-relaxed font-medium shadow-sm ${m.role === 'user'
-                    ? 'bg-slate-900 text-white rounded-2xl rounded-tr-sm'
-                    : 'bg-white text-slate-800 border border-slate-200 rounded-2xl rounded-tl-sm'
-                    }`}>
-                    {m.role === 'user' ? (
-                      <span>{m.content}</span>
-                    ) : (
-                      <div>{formatContent(m.content)}</div>
-                    )}
-                  </div>
-
-                  {/* Sources — Only for AI */}
-                  {m.role === 'assistant' && m.sources && m.sources.length > 0 && (
-                    <div className="mt-2.5 flex flex-wrap gap-1.5">
-                      {m.sources.map((src, sIdx) => (
-                        <button
-                          key={sIdx}
-                          onClick={() => src.url && window.open(src.url, '_blank')}
-                          className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white rounded-lg border border-slate-200 text-[10px] font-bold text-slate-400 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all active:scale-95"
-                        >
-                          {src.type === 'job' ? <Briefcase size={10} className="text-brand-500" /> : <Newspaper size={10} className="text-emerald-500" />}
-                          <span className="truncate max-w-[120px]">{src.title}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* User Avatar — Right */}
-                {m.role === 'user' && (
-                  <div className="shrink-0 ml-3 mt-1">
-                    <div className="w-9 h-9 bg-slate-800 rounded-2xl flex items-center justify-center text-white text-xs font-bold shadow-md">
-                      {userProfile?.full_name?.charAt(0)?.toUpperCase() || 'U'}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {/* Loading */}
-            {chatLoading && (
-              <div className="flex justify-start animate-fade-in">
-                <div className="shrink-0 mr-3 mt-1">
-                  <div className="w-9 h-9 bg-gradient-to-br from-brand-500 to-brand-300 rounded-2xl flex items-center justify-center shadow-md">
-                    <Sparkles size={16} className="text-white animate-pulse" />
-                  </div>
-                </div>
-                <div className="bg-white p-5 rounded-2xl rounded-tl-sm shadow-sm border border-slate-200">
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-3">
-                      <div className="flex gap-1.5">
-                        <div className="w-2 h-2 bg-brand-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-brand-400 rounded-full animate-bounce [animation-delay:0.15s]"></div>
-                        <div className="w-2 h-2 bg-brand-400 rounded-full animate-bounce [animation-delay:0.3s]"></div>
+          /* Messages State */
+          <>
+            <div className="flex-1 overflow-y-auto custom-scrollbar px-4 md:px-8 pb-32 pt-20" id="chat-messages">
+              <div className="max-w-3xl mx-auto space-y-8">
+                {messages.map((m, i) => (
+                  <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
+                    {m.role === 'assistant' && (
+                      <div className="shrink-0 mr-4 mt-0.5">
+                        <div className="w-7 h-7 bg-brand-500/10 rounded-lg flex items-center justify-center">
+                          <Sparkles size={14} className="text-brand-600" />
+                        </div>
                       </div>
-                      <span className="text-xs text-slate-400 font-medium">Mencari & menganalisis data...</span>
-                    </div>
-                    {/* Debug status */}
-                    <div className="text-[10px] text-slate-300 font-mono mt-1 border-t border-slate-100 pt-1">
-                      Status: {debugLog}
+                    )}
+
+                    <div className={`max-w-[85%] ${m.role === 'user' ? 'bg-[#F4F4F4] px-5 py-3.5 rounded-3xl text-slate-800' : 'text-slate-800'}`}>
+                      {m.role === 'user' && m.images && m.images.length > 0 && (
+                        <div className="mb-3 flex flex-wrap gap-2">
+                          {m.images.map((img, imgIdx) => (
+                            <img key={imgIdx} src={img} alt="Uploaded attachment" className="max-w-[200px] max-h-[200px] rounded-xl object-contain shadow-sm border border-slate-200" />
+                          ))}
+                        </div>
+                      )}
+                      <div className="text-[15px] leading-relaxed font-normal">
+                        {m.role === 'user' ? (
+                          <span>{m.content}</span>
+                        ) : (
+                          <div className="prose prose-slate prose-sm max-w-none prose-p:leading-relaxed prose-headings:font-semibold prose-headings:tracking-tight prose-a:text-brand-600 prose-ul:my-2 prose-li:my-0.5 whitespace-pre-wrap">
+                            {formatContent(m.content)}
+                          </div>
+                        )}
+                      </div>
+
+                      {m.role === 'assistant' && m.sources && m.sources.length > 0 && m.sources[0]?.title && (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {m.sources.map((src, sIdx) => src.title ? (
+                            <button
+                              key={sIdx}
+                              onClick={() => src.url && window.open(src.url, '_blank')}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#F9F9F8] rounded-full border border-slate-200 text-[11px] font-medium text-slate-600 hover:bg-[#EAEAE5] hover:text-slate-900 transition-all shadow-sm"
+                            >
+                              {src.type === 'job' ? <Briefcase size={12} className="opacity-70" /> : <Newspaper size={12} className="opacity-70" />}
+                              <span className="truncate max-w-[150px]">{src.title}</span>
+                            </button>
+                          ) : null)}
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              </div>
-            )}
-            <div ref={chatEndRef} />
-          </div>
-        )}
-      </div>
+                ))}
 
-      {/* Input Bar — ChatGPT Style */}
-      <div className="px-4 md:px-6 pb-4 pt-2">
-        <div className="max-w-3xl mx-auto">
-          <form
-            onSubmit={(e) => { e.preventDefault(); handleChatSubmit(); }}
-            className="relative bg-white border border-slate-200 rounded-2xl shadow-lg shadow-slate-200/50 focus-within:border-brand-400 focus-within:ring-4 focus-within:ring-brand-500/10 transition-all"
-          >
-            <textarea
-              ref={inputRef}
-              value={chatInput}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              placeholder="Tanyakan apa saja tentang lowongan kerja, CPNS, BUMN..."
-              disabled={chatLoading}
-              rows={1}
-              className="w-full px-5 py-4 pr-14 bg-transparent border-none resize-none focus:outline-none text-sm font-medium text-slate-700 placeholder:text-slate-400 max-h-[150px]"
-            />
-            <button
-              type="submit"
-              disabled={chatLoading || !chatInput.trim()}
-              className="absolute right-3 bottom-3 w-9 h-9 bg-slate-900 hover:bg-slate-700 disabled:bg-slate-200 text-white rounded-xl transition-all flex items-center justify-center active:scale-90"
-            >
-              {chatLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-            </button>
-          </form>
-          <p className="text-[10px] text-center text-slate-400 mt-2.5 font-medium">
-            Jobs Agent AI menggunakan data dari LinkedIn, CPNS, dan BUMN untuk memberikan jawaban yang akurat.
-          </p>
-        </div>
-      </div>
-    </div>
+                {chatLoading && (
+                  <div className="flex justify-start animate-fade-in">
+                    <div className="shrink-0 mr-4 mt-0.5">
+                      <div className="w-7 h-7 bg-brand-500/10 rounded-lg flex items-center justify-center">
+                        <Sparkles size={14} className="text-brand-600 animate-pulse" />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2 mt-1">
+                      <div className="flex gap-1.5 items-center h-5">
+                        <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></div>
+                        <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.15s]"></div>
+                        <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.3s]"></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+            </div>
+
+            {/* Bottom Fixed Input Box */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white to-transparent pt-8 pb-6 px-4 md:px-8 z-20">
+              <div className="max-w-3xl mx-auto flex flex-col items-center">
+                {attachedImage && (
+                  <div className="w-full mb-3 flex items-center gap-3 animate-fade-in bg-white p-2 rounded-xl shadow-sm border border-slate-200 max-w-max self-start ml-2 relative group">
+                    <img src={attachedImage} alt="Attachment" className="h-16 w-auto rounded object-contain" />
+                    <button
+                      onClick={removeAttachedImage}
+                      className="absolute -top-2 -right-2 bg-white text-slate-400 hover:text-red-500 rounded-full border border-slate-200 shadow-sm p-1 transition-colors"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                )}
+
+                <div className="w-full relative bg-[#F4F4F4] hover:bg-[#EAEAEA] border border-transparent focus-within:bg-white focus-within:border-[#D1D1D1] focus-within:shadow-sm rounded-3xl transition-all flex items-end p-2">
+                  <input
+                    type="file"
+                    id="chat-image-upload"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                  />
+                  <label htmlFor="chat-image-upload" className="p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 rounded-full cursor-pointer transition-colors shrink-0">
+                    <Upload size={20} />
+                  </label>
+                  <textarea
+                    ref={inputRef}
+                    value={chatInput}
+                    onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Balas ke AI..."
+                    disabled={chatLoading}
+                    rows={1}
+                    className="flex-1 max-h-[200px] min-h-[24px] py-3.5 px-2 bg-transparent border-none resize-none focus:outline-none text-[15px] text-slate-800 placeholder:text-slate-500"
+                  />
+                  <button
+                    onClick={() => handleChatSubmit()}
+                    disabled={chatLoading || (!chatInput.trim() && !attachedImage)}
+                    className={`p-2.5 rounded-full transition-all mx-1 mb-1 shadow-sm shrink-0 ${chatInput.trim() || attachedImage ? 'bg-black text-white hover:bg-slate-800' : 'bg-white text-slate-300 pointer-events-none'}`}
+                  >
+                    {chatLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} className="ml-0.5" />}
+                  </button>
+                </div>
+                <p className="text-[11px] text-center text-slate-400 mt-3 font-medium">
+                  AI Agent dapat membuat kesalahan. Harap periksa kembali informasi penting.
+                </p>
+              </div>
+            </div>
+          </>
+        )}
+      </div >
+    </div >
   );
 };
 
@@ -4278,6 +4695,7 @@ const CPNSBUMNView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [locationTerm, setLocationTerm] = useState('');
 
   const fetchPosts = async () => {
     try {
@@ -4308,10 +4726,11 @@ const CPNSBUMNView: React.FC = () => {
     fetchPosts();
   }, []);
 
-  const filteredPosts = posts.filter(post =>
-    post.caption?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.author?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredPosts = posts.filter(post => {
+    const searchMatch = !searchTerm || post.caption?.toLowerCase().includes(searchTerm.toLowerCase()) || post.author?.toLowerCase().includes(searchTerm.toLowerCase());
+    const locationMatch = !locationTerm || post.caption?.toLowerCase().includes(locationTerm.toLowerCase());
+    return searchMatch && locationMatch;
+  });
 
   const featuredPost = filteredPosts.length > 0 ? filteredPosts[0] : null;
   const otherPosts = filteredPosts.slice(1);
@@ -4340,34 +4759,51 @@ const CPNSBUMNView: React.FC = () => {
 
   return (
     <div className="animate-fade-in pb-10 max-w-6xl mx-auto px-4 sm:px-0">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 border-b-2 border-slate-900 pb-6">
         <div>
-          <h2 className="text-4xl font-black text-slate-900 flex items-center gap-3 tracking-tight">
-            <Globe className="text-brand-600" size={36} /> Info CPNS & BUMN
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-rose-600 text-white text-[10px] font-black uppercase tracking-widest mb-4">
+            <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+            Berita Terkini
+          </div>
+          <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-none mb-3 font-serif">
+            Info CPNS & BUMN
           </h2>
-          <p className="text-slate-500 mt-2 font-medium">Portal berita resmi seputar seleksi CASN dan karir BUMN Indonesia.</p>
+          <p className="text-slate-500 font-medium">Kumpulan info seleksi, jadwal, dan wawasan karir resmi.</p>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-colors" size={20} />
-            <input
-              type="text"
-              placeholder="Cari berita..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl w-full md:w-80 shadow-sm focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all text-sm font-medium"
-            />
-          </div>
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
+          <div className="flex w-full md:w-auto shadow-sm">
+            <div className="relative group flex-1 md:w-56">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={16} />
+              <input
+                type="text"
+                placeholder="Cari berita..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-11 pr-4 py-2.5 bg-slate-50 border-r border-slate-200/50 rounded-none w-full focus:outline-none focus:ring-inset focus:ring-2 focus:ring-slate-900 transition-all text-sm font-semibold text-slate-900 placeholder:text-slate-400"
+              />
+            </div>
 
-          <button
-            onClick={fetchPosts}
-            disabled={loading}
-            className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-2xl font-bold transition-all disabled:opacity-50 active:scale-95 whitespace-nowrap shadow-lg shadow-slate-200"
-          >
-            {loading ? <Loader2 size={18} className="animate-spin" /> : <Loader2 size={18} />}
-            <span className="hidden sm:inline">{loading ? 'Memproses...' : 'Refresh'}</span>
-          </button>
+            <div className="relative group flex-1 md:w-40 border-l border-white">
+              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={16} />
+              <input
+                type="text"
+                placeholder="Lokasi..."
+                value={locationTerm}
+                onChange={(e) => setLocationTerm(e.target.value)}
+                className="pl-10 pr-4 py-2.5 bg-slate-50 border-none rounded-none w-full focus:outline-none focus:ring-inset focus:ring-2 focus:ring-slate-900 transition-all text-sm font-semibold text-slate-900 placeholder:text-slate-400"
+              />
+            </div>
+
+            <button
+              onClick={fetchPosts}
+              disabled={loading}
+              className="flex items-center justify-center w-10 h-10 bg-slate-900 hover:bg-slate-800 text-white transition-all disabled:opacity-50 active:scale-95 shrink-0"
+              title="Refresh Berita"
+            >
+              {loading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCcw size={16} />}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -4398,68 +4834,76 @@ const CPNSBUMNView: React.FC = () => {
           {/* Featured Post (Hero Section) */}
           {featuredPost && !searchTerm && (
             <div
-              className="relative rounded-[2.5rem] overflow-hidden group cursor-pointer shadow-2xl shadow-slate-200 border border-slate-100 h-[450px]"
+              className="relative overflow-hidden group cursor-pointer mb-12 flex flex-col lg:flex-row gap-8 items-center"
               onClick={() => window.open(featuredPost.url, '_blank')}
             >
-              <div className={`absolute inset-0 bg-gradient-to-br ${getSourceColor(featuredPost.author)} opacity-90 group-hover:opacity-100 transition-opacity`}></div>
-
-              <div className="absolute inset-0 p-8 md:p-12 flex flex-col justify-end text-white z-10">
-                <div className="flex flex-wrap items-center gap-3 mb-6">
-                  <span className="bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2">
-                    <Newspaper size={16} /> {featuredPost.author || 'Berita Utama'}
-                  </span>
-                  <span className="bg-black/10 backdrop-blur-sm px-4 py-1.5 rounded-full text-sm font-medium flex items-center gap-2">
-                    <Clock size={16} /> {formatDate(featuredPost.timestamp)}
-                  </span>
-                  <span className="bg-brand-500 text-white px-4 py-1.5 rounded-full text-sm font-black tracking-widest uppercase">LATEST</span>
-                </div>
-
-                <h3 className="text-3xl md:text-5xl font-black mb-6 leading-[1.1] max-w-4xl group-hover:translate-x-2 transition-transform duration-500">
-                  {featuredPost.caption}
-                </h3>
-
-                <div className="flex items-center gap-4">
-                  <div className="h-px w-20 bg-white/30 hidden sm:block"></div>
-                  <span className="flex items-center gap-2 text-lg font-bold group-hover:gap-4 transition-all">
-                    Baca Selengkapnya <ArrowRight size={20} />
-                  </span>
+              <div className="w-full lg:w-[65%] h-[350px] sm:h-[450px] relative overflow-hidden bg-slate-100">
+                {featuredPost.imageUrl ? (
+                  <img src={featuredPost.imageUrl} alt={featuredPost.caption} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                ) : (
+                  <div className={`w-full h-full bg-gradient-to-br ${getSourceColor(featuredPost.author)} flex items-center justify-center relative`}>
+                    <Globe size={120} className="text-white/20 absolute -right-10 -bottom-10" />
+                  </div>
+                )}
+                <div className="absolute top-4 left-4 bg-brand-600 text-white px-4 py-1.5 text-xs font-black tracking-widest uppercase">
+                  Sorotan Utama
                 </div>
               </div>
 
-              {/* Decorative elements */}
-              <div className="absolute top-0 right-0 p-12 opacity-10">
-                <Newspaper size={200} />
+              <div className="w-full lg:w-[35%] flex flex-col justify-center">
+                <div className="flex items-center gap-3 text-sm font-bold text-brand-600 mb-4 uppercase tracking-wider">
+                  <span>{featuredPost.author || 'Berita Utama'}</span>
+                  <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+                  <span className="text-slate-400">{formatDate(featuredPost.timestamp)}</span>
+                </div>
+                <h3 className="text-3xl sm:text-4xl font-black text-slate-900 mb-6 leading-[1.15] group-hover:text-brand-600 transition-colors font-serif">
+                  {featuredPost.caption}
+                </h3>
+                <p className="text-slate-500 leading-relaxed mb-6 line-clamp-3">
+                  Informasi lebih lanjut mengenai pengumuman {featuredPost.caption}. Klik untuk membaca selengkapnya langsung dari portal resmi {featuredPost.author}.
+                </p>
+                <div className="flex items-center gap-2 text-sm font-bold text-slate-900 group-hover:text-brand-600 transition-colors">
+                  BACA SELENGKAPNYA <ArrowRight size={16} />
+                </div>
               </div>
             </div>
           )}
 
           {/* Grid of Other Posts */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* Grid of Other Posts */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
             {(searchTerm ? filteredPosts : otherPosts).map((post) => (
               <div
                 key={post.id}
-                className="bg-white rounded-3xl border border-slate-200 overflow-hidden hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group flex flex-col cursor-pointer ring-0 hover:ring-8 hover:ring-brand-500/5"
+                className="group cursor-pointer flex flex-col"
                 onClick={() => window.open(post.url, '_blank')}
               >
-                <div className={`h-2.5 bg-gradient-to-r ${getSourceColor(post.author)}`}></div>
+                <div className="w-full h-56 mb-5 overflow-hidden bg-slate-100 relative">
+                  {post.imageUrl ? (
+                    <img src={post.imageUrl} alt={post.caption} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  ) : (
+                    <div className={`w-full h-full bg-gradient-to-br ${getSourceColor(post.author)} flex items-center justify-center p-6 relative overflow-hidden`}>
+                      <Newspaper size={100} className="absolute -right-4 -bottom-4 text-white/10" />
+                      <span className="text-white font-black text-2xl uppercase tracking-widest opacity-30 mix-blend-overlay">{post.author}</span>
+                    </div>
+                  )}
+                  <div className="absolute top-3 left-3 bg-white px-2.5 py-1 text-[10px] font-black tracking-widest uppercase shadow-sm">
+                    {post.author}
+                  </div>
+                </div>
 
-                <div className="p-8 flex-1 flex flex-col">
-                  <div className="flex items-center justify-between mb-5">
-                    <span className="text-brand-600 font-extrabold text-xs uppercase tracking-widest flex items-center gap-2">
-                      <Newspaper size={14} /> {post.author}
-                    </span>
-                    <span className="text-slate-400 text-xs font-bold flex items-center gap-1.5">
-                      <Clock size={14} /> {formatDate(post.timestamp)}
-                    </span>
+                <div className="flex-1 flex flex-col">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">
+                    <Clock size={12} /> {formatDate(post.timestamp)}
                   </div>
 
-                  <h4 className="text-xl font-bold text-slate-800 line-clamp-4 mb-6 flex-1 group-hover:text-brand-600 transition-colors leading-snug">
+                  <h4 className="text-xl font-bold text-slate-900 line-clamp-3 mb-4 group-hover:text-brand-600 transition-colors leading-[1.3] font-serif">
                     {post.caption}
                   </h4>
 
-                  <div className="flex items-center justify-end pt-5 border-t border-slate-50 mt-auto">
-                    <span className="flex items-center gap-2 text-sm text-slate-900 font-black group-hover:text-brand-600 group-hover:gap-3 transition-all">
-                      SELENGKAPNYA <ChevronRight size={18} />
+                  <div className="mt-auto pt-4 border-t border-slate-200">
+                    <span className="text-xs font-bold text-slate-900 group-hover:text-brand-600 transition-colors uppercase tracking-widest flex items-center gap-1.5">
+                      BACA LENGKAP <ChevronRight size={14} />
                     </span>
                   </div>
                 </div>
@@ -4496,6 +4940,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(() => loadProfile());
   const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
   const [toastNotif, setToastNotif] = useState<Notification | null>(null);
+  const [searchKey, setSearchKey] = useState(0);
 
   React.useEffect(() => {
     // Sync profile from prop if exists (passed from App.tsx session)
@@ -4584,6 +5029,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
     setCurrentView('detail');
   };
   const handleNavClick = (view: DashboardView) => {
+    if (view === 'search' || view === 'cv-match') {
+      setSearchKey(prev => prev + 1);
+    }
     if (!userProfile?.raw_cv && view !== 'settings' && view !== 'cv-builder') {
       setShowCVAlert(true);
       setCurrentView('settings');
@@ -4631,18 +5079,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
 
     switch (currentView) {
       case 'dashboard': return <DashboardHome user={user} onViewChange={setCurrentView} unreadCount={unreadCount} />;
+      case 'cv-match':
       case 'search':
       case 'detail':
         return (
-          <div className={currentView === 'detail' ? 'flex flex-col lg:flex-row gap-6 h-[calc(100vh-100px)] overflow-hidden' : ''}>
+          <div className={currentView === 'detail' ? 'flex flex-col lg:flex-row gap-6 h-full overflow-hidden' : ''}>
             {currentView === 'detail' ? (
               // In detail mode: show job list only if there are results, otherwise hide left panel
-              <div className="w-full lg:w-[400px] xl:w-[450px] flex-shrink-0 h-full overflow-y-auto custom-scrollbar pr-4 mr-2 lg:block hidden">
-                <JobSearch user={user} onJobClick={handleJobClick} onViewChange={setCurrentView} userProfile={userProfile} unreadCount={unreadCount} isSplitView={true} selectedJob={selectedJob} />
+              <div className="w-full lg:w-[400px] xl:w-[450px] flex-shrink-0 h-full overflow-y-auto custom-scrollbar pr-2 lg:block hidden">
+                <JobSearch key={searchKey} user={user} onJobClick={handleJobClick} onViewChange={setCurrentView} userProfile={userProfile} unreadCount={unreadCount} isSplitView={true} selectedJob={selectedJob} initialMode={currentView === 'cv-match' ? 'cv-match' : 'default'} />
               </div>
             ) : (
-              <div className="w-full block">
-                <JobSearch user={user} onJobClick={handleJobClick} onViewChange={setCurrentView} userProfile={userProfile} unreadCount={unreadCount} isSplitView={false} selectedJob={selectedJob} />
+              <div className="w-full block h-full overflow-y-auto">
+                <JobSearch key={searchKey} user={user} onJobClick={handleJobClick} onViewChange={setCurrentView} userProfile={userProfile} unreadCount={unreadCount} isSplitView={false} selectedJob={selectedJob} initialMode={currentView === 'cv-match' ? 'cv-match' : 'default'} />
               </div>
             )}
             {currentView === 'detail' && selectedJob && (
@@ -4747,7 +5196,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
+    <div className="h-screen overflow-hidden bg-slate-50 flex font-sans text-slate-900">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
@@ -4785,6 +5234,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
             <div className="text-xs font-bold text-slate-400 uppercase tracking-wider px-4 mb-3">Menu</div>
             <div className="space-y-1">
               <NavItem icon={<Search size={20} />} label="Cari Lowongan" active={currentView === 'search' || currentView === 'detail'} onClick={() => handleNavClick('search')} />
+              <NavItem icon={<Sparkles size={20} />} label="Rekomendasi CV" active={currentView === 'cv-match'} onClick={() => handleNavClick('cv-match')} badge="New" />
               <NavDropdown
                 icon={<Briefcase size={20} />}
                 label="Track In My Jobs"
@@ -4866,7 +5316,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 h-screen overflow-y-auto bg-slate-50 relative custom-scrollbar flex flex-col">
+      <main className="flex-1 h-full overflow-hidden bg-slate-50 relative flex flex-col">
         {/* Universal Header Toggle (Sticky) */}
         <div className={`
           sticky top-0 z-30 p-4 bg-slate-50/90 backdrop-blur-sm border-b border-slate-200 transition-all duration-300
@@ -4897,7 +5347,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, user }) => {
           </div>
         </div>
 
-        <div className="p-4 md:p-8 lg:p-12 max-w-[1600px] mx-auto min-h-full w-full">
+        <div className={`p-4 md:p-8 lg:p-12 max-w-[1600px] mx-auto w-full flex-1 ${currentView === 'detail' ? 'h-full overflow-hidden' : 'overflow-y-auto custom-scrollbar'}`}>
           {renderContent()}
         </div>
       </main>

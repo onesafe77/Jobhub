@@ -35,7 +35,10 @@ export const Login: React.FC<LoginProps> = ({ onSignUpClick, onLoginComplete, on
 
    const handleSocialLogin = async (provider: 'google' | 'linkedin') => {
       const { error } = await supabase.auth.signInWithOAuth({
-         provider: provider as any,
+         provider: provider === 'linkedin' ? 'linkedin_oidc' : provider as any,
+         options: {
+            redirectTo: `${window.location.origin}`
+         }
       });
       if (error) setError(error.message);
    };
@@ -127,14 +130,23 @@ export const Login: React.FC<LoginProps> = ({ onSignUpClick, onLoginComplete, on
                   </p>
                </div>
 
-               <div className="space-y-4 mb-8">
+               <div className="grid grid-cols-2 gap-4 mb-8">
                   <button
                      onClick={() => handleSocialLogin('google')}
                      disabled={loading}
-                     className="w-full h-14 bg-white border-2 border-slate-100 hover:border-slate-200 hover:bg-slate-50 text-slate-700 rounded-2xl font-bold flex items-center justify-center gap-3 transition-all active:scale-[0.98] text-[15px] shadow-sm disabled:opacity-70 group"
+                     className="h-14 bg-white border-2 border-slate-100 hover:border-slate-200 hover:bg-slate-50 text-slate-700 rounded-2xl font-bold flex items-center justify-center gap-3 transition-all active:scale-[0.98] text-[15px] shadow-sm disabled:opacity-70 group"
                   >
                      <img src="https://www.google.com/favicon.ico" alt="G" className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                     Lanjutkan dengan Google
+                     Google
+                  </button>
+
+                  <button
+                     onClick={() => handleSocialLogin('linkedin')}
+                     disabled={loading}
+                     className="h-14 bg-white border-2 border-slate-100 hover:border-slate-200 hover:bg-slate-50 text-slate-700 rounded-2xl font-bold flex items-center justify-center gap-3 transition-all active:scale-[0.98] text-[15px] shadow-sm disabled:opacity-70 group"
+                  >
+                     <Linkedin className="w-5 h-5 text-[#0077b5] group-hover:scale-110 transition-transform" />
+                     LinkedIn
                   </button>
                </div>
 

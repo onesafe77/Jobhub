@@ -7,6 +7,30 @@ import { logUserActivity, calculateOpenAICost } from './logger';
 
 const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || '';
 
+const getAiEndpoint = () => OPENAI_API_KEY.startsWith('sk-or-')
+    ? 'https://openrouter.ai/api/v1/chat/completions'
+    : 'https://api.openai.com/v1/chat/completions';
+
+const getAiHeaders = () => ({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${OPENAI_API_KEY}`,
+    ...(OPENAI_API_KEY.startsWith('sk-or-') ? {
+        'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : 'https://jobsagent.local',
+        'X-Title': 'JobsAgent',
+    } : {})
+});
+
+// resolveModel: If using OpenRouter, pass full model path (e.g. 'anthropic/claude-3.5-sonnet').
+// If using direct OpenAI, strip the provider prefix and use just the model name.
+const resolveModel = (model: string) => {
+    if (OPENAI_API_KEY.startsWith('sk-or-')) {
+        // OpenRouter: use full model path as-is (e.g. 'openai/gpt-4o-mini', 'anthropic/claude-3.5-sonnet')
+        return model.includes('/') ? model : `openai/${model}`;
+    }
+    // Direct OpenAI: strip provider prefix, use just the model name
+    return model.includes('/') ? model.split('/').pop()! : model;
+};
+
 export interface WorkExperience {
     role: string;
     company: string;
@@ -63,14 +87,11 @@ export interface MatchResult {
  * Extracts structured profile data from free-form CV text.
  */
 export async function parseCV(cvText: string): Promise<UserProfile> {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(getAiEndpoint(), {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        },
+        headers: getAiHeaders(),
         body: JSON.stringify({
-            model: 'gpt-4o-mini',
+            model: resolveModel('gpt-4o-mini'),
             temperature: 0.1,
             response_format: { type: 'json_object' },
             messages: [
@@ -228,14 +249,11 @@ export async function deepMatchAnalysis(
     jobTitle: string,
     jobDescription: string
 ): Promise<MatchResult> {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(getAiEndpoint(), {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        },
+        headers: getAiHeaders(),
         body: JSON.stringify({
-            model: 'gpt-4o-mini',
+            model: resolveModel('gpt-4o-mini'),
             temperature: 0.1,
             response_format: { type: 'json_object' },
             messages: [
@@ -305,6 +323,10 @@ Description: ${jobDescription.substring(0, 2000)}`
  * Save user profile to localStorage.
  */
 export function saveProfile(profile: UserProfile): void {
+    const existing = loadProfile();
+    if (existing && existing.subscriptionPlan && !profile.subscriptionPlan) {
+        profile.subscriptionPlan = existing.subscriptionPlan;
+    }
     localStorage.setItem('jobsagent_profile', JSON.stringify(profile));
 }
 
@@ -325,7 +347,15 @@ export function loadProfile(): UserProfile | null {
  * Clear user profile from localStorage.
  */
 export function clearProfile(): void {
-    localStorage.removeItem('jobsagent_profile');
+    const existing = loadProfile();
+    if (existing && existing.subscriptionPlan) {
+        // Keep only the subscription plan, wipe everything else
+        localStorage.setItem('jobsagent_profile', JSON.stringify({
+            subscriptionPlan: existing.subscriptionPlan
+        }));
+    } else {
+        localStorage.removeItem('jobsagent_profile');
+    }
 }
 
 export interface ATSIssue {
@@ -346,14 +376,11 @@ export interface ATSAnalysisResult {
  * Deep AI ATS CV analysis using OpenAI
  */
 export async function analyzeCVForATS(cvText: string): Promise<ATSAnalysisResult> {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(getAiEndpoint(), {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        },
+        headers: getAiHeaders(),
         body: JSON.stringify({
-            model: 'gpt-4o-mini',
+            model: resolveModel('gpt-4o-mini'),
             temperature: 0.1,
             response_format: { type: 'json_object' },
             messages: [
@@ -417,14 +444,11 @@ Be realistic and highly critical, considering format, keywords, readability, and
  * Automatically applies an AI suggestion to the CV text.
  */
 export async function autoFixCVIssue(cvText: string, issueTitle: string, fixInstruction: string): Promise<string> {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(getAiEndpoint(), {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        },
+        headers: getAiHeaders(),
         body: JSON.stringify({
-            model: 'gpt-4o-mini',
+            model: resolveModel('anthropic/claude-3.5-sonnet'),
             temperature: 0.1, // Low temperature for more deterministic edits
             messages: [
                 {
@@ -477,14 +501,11 @@ ${cvText}
  * Generate a Cover Letter based on user profile/CV and a job description.
  */
 export async function generateCoverLetter(cvText: string, jobDetails: string): Promise<string> {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(getAiEndpoint(), {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        },
+        headers: getAiHeaders(),
         body: JSON.stringify({
-            model: 'gpt-4o', // Using gpt-4o for better writing quality
+            model: resolveModel('anthropic/claude-3.5-sonnet'),
             temperature: 0.7, // Higher temp for more natural flow
             messages: [
                 {
@@ -543,14 +564,11 @@ Tolong buatkan Cover Letter untuk saya lamar pekerjaan tersebut.`
  * Optimize a specific CV section for ATS compatibility using OpenAI.
  */
 export async function optimizeCVSection(content: string, sectionType: 'summary' | 'experience' | 'skills'): Promise<string> {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(getAiEndpoint(), {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        },
+        headers: getAiHeaders(),
         body: JSON.stringify({
-            model: 'gpt-4o-mini',
+            model: resolveModel('anthropic/claude-3.5-sonnet'),
             temperature: 0.3,
             messages: [
                 {
@@ -610,14 +628,11 @@ export interface SalaryEstimateResult {
  * Estimate Market Salary based on CV Profile.
  */
 export async function estimateSalaryFromCV(profile: UserProfile): Promise<SalaryEstimateResult> {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(getAiEndpoint(), {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        },
+        headers: getAiHeaders(),
         body: JSON.stringify({
-            model: 'gpt-4o', // Using gpt-4o for better market reasoning
+            model: resolveModel('openai/gpt-4o-mini'),
             temperature: 0.2,
             response_format: { type: 'json_object' },
             messages: [

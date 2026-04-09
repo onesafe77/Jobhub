@@ -1,5 +1,7 @@
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
+// @ts-ignore
+import { jsPDF } from 'https://esm.sh/jspdf@2.5.1';
+// @ts-ignore
+import autoTable from 'https://esm.sh/jspdf-autotable@3.8.2';
 
 interface InvoiceData {
     orderId: string;

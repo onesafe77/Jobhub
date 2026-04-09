@@ -47,13 +47,33 @@ function chunkText(text: string, chunkSize = 800, chunkOverlap = 150): string[] 
 }
 
 // Fetch article content
-async function fetchArticleContent(url: string): Promise<string | null> {
+async function fetchArticleContent(url: string): Promise<{ content: string | null, imageUrl: string | null }> {
     try {
         const response = await fetch(url, {
             headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
         })
-        if (!response.ok) return null
+        if (!response.ok) return { content: null, imageUrl: null }
         const html = await response.text()
+
+        // Extract og:image
+        const ogImageRegex = /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i
+        const ogImageMatch = ogImageRegex.exec(html)
+        const ogImageRegex2 = /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i
+        const ogImageMatch2 = ogImageRegex2.exec(html)
+
+        let imageUrl = ogImageMatch ? ogImageMatch[1] : (ogImageMatch2 ? ogImageMatch2[1] : null)
+
+        if (!imageUrl) {
+            // Try standard meta image or first big image
+            const metaImgRegex = /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i
+            const metaImgMatch = metaImgRegex.exec(html)
+            imageUrl = metaImgMatch ? metaImgMatch[1] : null
+        }
+
+        // Decode HTML entities in the URL if necessary
+        if (imageUrl) {
+            imageUrl = imageUrl.replace(/&amp;/g, '&')
+        }
 
         // Robust extraction: try common article containers
         const selectors = [
@@ -66,15 +86,15 @@ async function fetchArticleContent(url: string): Promise<string | null> {
         for (const regex of selectors) {
             const match = html.match(regex)
             if (match && match[1].length > 500) {
-                return cleanHtml(match[1])
+                return { content: cleanHtml(match[1]), imageUrl }
             }
         }
 
         // Final fallback: just clean the whole body but exclude common junk
         const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i)
-        return bodyMatch ? cleanHtml(bodyMatch[1]) : cleanHtml(html)
+        return { content: bodyMatch ? cleanHtml(bodyMatch[1]) : cleanHtml(html), imageUrl }
     } catch (err) {
-        return null
+        return { content: null, imageUrl: null }
     }
 }
 
@@ -253,7 +273,14 @@ serve(async (req) => {
             const rssDescription = originalItem ? cleanHtml(originalItem.description) : ''
 
             let contentToChunk = ''
-            const fullContent = await fetchArticleContent(post.url)
+            const { content: fullContent, imageUrl: scrapedImage } = await fetchArticleContent(post.url)
+
+            if (scrapedImage) {
+                // Update the post with the scraped image!
+                const { error: updateErr } = await supabaseClient.from('cpns_bumn_posts').update({ image_url: scrapedImage }).eq('id', post.id)
+                if (updateErr) executionLogs.push(`Failed to update image for ${post.id}`)
+                else executionLogs.push(`Updated scraped image for ${post.caption.substring(0, 20)}...`)
+            }
 
             if (fullContent && fullContent.length > 300) {
                 contentToChunk = fullContent

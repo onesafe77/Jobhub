@@ -6,14 +6,6 @@ import { supabase } from '../lib/supabase';
 
 export const Pricing: React.FC<{ onSelectPlan?: (plan: 'free' | 'lite' | 'pro') => void }> = ({ onSelectPlan }) => {
     const [loading, setLoading] = useState<string | null>(null);
-    const [selectedMethod, setSelectedMethod] = useState<'VC' | 'SP' | 'OV' | 'LA'>('VC');
-
-    const paymentMethods = [
-        { id: 'gopay', name: 'Gopay / QRIS', icon: '📱' },
-        { id: 'shopeepay', name: 'ShopeePay', icon: '🟠' },
-        { id: 'bank_transfer', name: 'Virtual Account', icon: '🏦' },
-        { id: 'credit_card', name: 'Kartu Kredit', icon: '💳' },
-    ];
 
     const handlePlanSelection = async (plan: 'free' | 'lite' | 'pro', amount: number) => {
         if (plan === 'free') {
@@ -135,21 +127,9 @@ export const Pricing: React.FC<{ onSelectPlan?: (plan: 'free' | 'lite' | 'pro') 
                         Mulai gratis, upgrade kapanpun
                     </p>
 
-                    {/* Payment Method Selector */}
-                    <div className="inline-flex flex-wrap justify-center gap-3 p-2 bg-white rounded-2xl border border-slate-200 shadow-sm mb-8">
-                        {paymentMethods.map((method) => (
-                            <button
-                                key={method.id}
-                                onClick={() => setSelectedMethod(method.id as any)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${selectedMethod === method.id
-                                    ? 'bg-brand-600 text-white shadow-md shadow-brand-500/20'
-                                    : 'text-slate-600 hover:bg-slate-50'
-                                    }`}
-                            >
-                                <span>{method.icon}</span>
-                                {method.name}
-                            </button>
-                        ))}
+                    {/* Penawaran Harga Badge */}
+                    <div className="inline-flex items-center justify-center px-6 py-2.5 bg-brand-50 text-brand-700 rounded-full text-sm font-bold border border-brand-200 shadow-sm mb-8">
+                        ✨ Penawaran Harga / Pricing
                     </div>
                 </div>
 
@@ -250,7 +230,7 @@ export const Pricing: React.FC<{ onSelectPlan?: (plan: 'free' | 'lite' | 'pro') 
                             <div className="flex justify-between items-start mb-4">
                                 <div className="text-[13px] font-bold text-brand-600 uppercase tracking-wider">Pro</div>
                                 <span className="bg-brand-100 text-brand-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide">
-                                    💎 Best Value
+                                    🔥 Best Seller
                                 </span>
                             </div>
 
